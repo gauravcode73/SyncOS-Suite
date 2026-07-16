@@ -39,7 +39,6 @@ export default function DashboardOverview() {
 
   // Modal Triggers for Quick Actions
   const [taskModalOpen, setTaskModalOpen] = useState(false);
-  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
 
   // Quick Task Creation Form State
   const [newTaskName, setNewTaskName] = useState('');
@@ -49,11 +48,7 @@ export default function DashboardOverview() {
   const [newTaskHours, setNewTaskHours] = useState('8');
   const [newTaskDeadline, setNewTaskDeadline] = useState('');
 
-  // Quick Leave Application Form State
-  const [leaveType, setLeaveType] = useState<'Casual' | 'Sick' | 'Annual' | 'Unpaid'>('Casual');
-  const [leaveStart, setLeaveStart] = useState('');
-  const [leaveEnd, setLeaveEnd] = useState('');
-  const [leaveReason, setLeaveReason] = useState('');
+
 
   useEffect(() => {
     setDb(getDb());
@@ -173,51 +168,7 @@ export default function DashboardOverview() {
     refreshDbState();
   };
 
-  // Submit Quick Leave Request
-  const handleApplyLeave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!leaveStart || !leaveEnd || !leaveReason.trim()) return;
 
-    const currentDb = getDb();
-    const request = {
-      id: `leave-${Date.now()}`,
-      profileId: user.id,
-      type: leaveType,
-      startDate: leaveStart,
-      endDate: leaveEnd,
-      reason: leaveReason,
-      status: 'Pending' as const,
-      approvedBy: null,
-      createdAt: new Date().toISOString()
-    };
-
-    currentDb.leaveRequests.unshift(request);
-
-    // Notify HR Admin & Manager
-    const admins = currentDb.profiles.filter(p => p.role === 'Super Admin' || p.role === 'HR Admin');
-    admins.forEach(admin => {
-      currentDb.notifications.unshift({
-        id: `notif-${Date.now()}-${admin.id}`,
-        profileId: admin.id,
-        title: 'New Leave Application',
-        body: `${user.name} requested ${leaveType} leave from ${leaveStart} to ${leaveEnd}`,
-        type: 'leave',
-        isRead: false,
-        referenceId: request.id,
-        createdAt: new Date().toISOString()
-      });
-    });
-
-    addActivityLog(user.id, 'Leave Applied', `Requested ${leaveType} leave: ${leaveStart} to ${leaveEnd}`);
-    saveDb(currentDb);
-
-    // Reset Form
-    setLeaveStart('');
-    setLeaveEnd('');
-    setLeaveReason('');
-    setLeaveModalOpen(false);
-    refreshDbState();
-  };
 
   // Dismiss notification card helper
   const handleMarkNotifRead = (notifId: string) => {
@@ -244,19 +195,12 @@ export default function DashboardOverview() {
           </p>
         </div>
 
-        {/* Quick action buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => setTaskModalOpen(true)}
             className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all"
           >
             <Plus className="w-3.5 h-3.5" /> Create Task
-          </button>
-          <button
-            onClick={() => setLeaveModalOpen(true)}
-            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-xl border border-slate-700 transition-all"
-          >
-            <Calendar className="w-3.5 h-3.5 text-violet-400" /> Apply Leave
           </button>
           <Link
             href="/dashboard/meetings"
@@ -676,83 +620,7 @@ export default function DashboardOverview() {
         </div>
       )}
 
-      {/* APPLY LEAVE QUICK MODAL */}
-      {leaveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg animate-fade-in text-slate-200">
-            <h2 className="text-base font-bold text-white mb-4 pb-2 border-b border-slate-800/60">Apply for Leave</h2>
-            <form onSubmit={handleApplyLeave} className="space-y-4">
-              
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Leave Type</label>
-                <select
-                  value={leaveType}
-                  onChange={(e: any) => setLeaveType(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs focus:border-violet-500 outline-none"
-                >
-                  <option value="Casual">Casual Leave</option>
-                  <option value="Sick">Sick Leave</option>
-                  <option value="Annual">Annual Paid Leave</option>
-                  <option value="Unpaid">Unpaid Leave</option>
-                </select>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Start Date</label>
-                  <input
-                    type="date"
-                    required
-                    value={leaveStart}
-                    onChange={(e) => setLeaveStart(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs focus:border-violet-500 outline-none text-slate-350"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">End Date</label>
-                  <input
-                    type="date"
-                    required
-                    value={leaveEnd}
-                    onChange={(e) => setLeaveEnd(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs focus:border-violet-500 outline-none text-slate-350"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Reason / Justification</label>
-                <textarea
-                  required
-                  value={leaveReason}
-                  onChange={(e) => setLeaveReason(e.target.value)}
-                  placeholder="State the reason clearly for approval review..."
-                  rows={3}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs focus:border-violet-500 outline-none resize-none"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setLeaveModalOpen(false)}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2 rounded-lg text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-violet-600 hover:bg-violet-500 text-white font-bold px-4 py-2 rounded-lg text-xs"
-                >
-                  Apply Leave
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
-      )}
 
     </div>
   );

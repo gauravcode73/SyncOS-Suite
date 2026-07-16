@@ -199,7 +199,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     { name: 'Workspace Chat', icon: MessageSquare, path: '/dashboard/chat' },
     { name: 'Projects & Tasks', icon: CheckSquare, path: '/dashboard/tasks' },
     { name: 'Video Meetings', icon: Video, path: '/dashboard/meetings' },
-    { name: 'HRMS & Leaves', icon: CalendarRange, path: '/dashboard/hrms' },
     { name: 'Cloud Drive Storage', icon: HardDrive, path: '/dashboard/storage' },
     { name: 'Knowledge SOP Base', icon: BookOpen, path: '/dashboard/knowledge' },
     { name: 'Analytics Reports', icon: Activity, path: '/dashboard/analytics' }
