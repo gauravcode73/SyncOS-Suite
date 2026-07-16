@@ -437,7 +437,19 @@ const syncDelta = async (oldDb: DB, newDb: DB) => {
     // Find deletes
     for (const oldItem of oldList) {
       if (!newMap.has(oldItem.id)) {
-        deleteRecordFromSupabase(t.dbTable, oldItem.id);
+        // Protect seeded default records from being automatically deleted by a blank sync
+        const isSeededId = 
+          oldItem.id.startsWith('dept-') || 
+          oldItem.id.startsWith('room-') || 
+          oldItem.id === 'emp-001' || 
+          oldItem.id === 'fld-root-sop' || 
+          oldItem.id === 'sop-hr-policy' || 
+          oldItem.id === 'sop-it-vpn' || 
+          oldItem.id === 'ann-1';
+        
+        if (!isSeededId) {
+          deleteRecordFromSupabase(t.dbTable, oldItem.id);
+        }
       }
     }
   }
