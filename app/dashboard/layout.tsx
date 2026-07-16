@@ -189,7 +189,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       }
       addActivityLog(user.id, 'User Logout', 'User manual sign out.');
     }
+    setCurrentUser(null);
     setUser(null);
+    router.push('/');
   };
 
   const menuItems = [
@@ -374,42 +376,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               <Search className="w-5 h-5" />
             </button>
 
-            {/* 🕒 REALTIME ATTENDANCE CLOCK IN BAR */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-950/40 text-xs">
-              <Clock className="w-3.5 h-3.5 text-violet-400" />
-              <span className="font-mono font-bold text-slate-200 min-w-[50px] text-center">{clockTimer}</span>
-              
-              <div className="h-4 w-px bg-slate-800 mx-1" />
 
-              {!isClockedIn ? (
-                <button
-                  onClick={() => triggerClockIn()}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-2 py-0.5 rounded text-[10px] transition-all"
-                >
-                  Clock In
-                </button>
-              ) : (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={triggerBreak}
-                    className={`font-semibold px-2 py-0.5 rounded text-[10px] transition-all flex items-center gap-1 ${
-                      isOnBreak
-                        ? 'bg-amber-600 hover:bg-amber-500 text-white'
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                    }`}
-                  >
-                    <Coffee className="w-2.5 h-2.5" />
-                    {isOnBreak ? 'End Break' : 'Break'}
-                  </button>
-                  <button
-                    onClick={triggerClockOut}
-                    className="bg-red-600 hover:bg-red-500 text-white font-semibold px-2 py-0.5 rounded text-[10px] transition-all"
-                  >
-                    Clock Out
-                  </button>
-                </div>
-              )}
-            </div>
 
             {/* 🛠 DEVELOPMENT ENVIRONMENT ROLE QUICK SWITCHER */}
             <div className="relative">

@@ -268,7 +268,7 @@ export default function DashboardOverview() {
       </div>
 
       {/* METRIC STATS ROW */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
         {/* Pending tasks count */}
         <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/20 backdrop-blur-md flex items-center gap-4">
@@ -289,19 +289,6 @@ export default function DashboardOverview() {
           <div>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Completed Tasks</p>
             <h3 className="text-xl font-bold text-white mt-0.5">{completedTasksCount}</h3>
-          </div>
-        </div>
-
-        {/* Attendance Checkin hour */}
-        <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/20 backdrop-blur-md flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-violet-500/10 border border-violet-500/25 flex items-center justify-center text-violet-400 font-bold">
-            <Clock className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Hours Worked Today</p>
-            <h3 className="text-xl font-bold text-white mt-0.5">
-              {isClockedIn ? `${workingHours} hrs` : 'Not Clocked In'}
-            </h3>
           </div>
         </div>
 

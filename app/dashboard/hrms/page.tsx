@@ -34,7 +34,7 @@ export default function HRMSPortal() {
   const [db, setDb] = useState(getDb());
   
   // HRMS sub-tabs
-  const [activeSubTab, setActiveSubTab] = useState<'attendance' | 'leaves' | 'directory'>('attendance');
+  const [activeSubTab, setActiveSubTab] = useState<'leaves' | 'directory'>('leaves');
   
   // Directory filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -220,7 +220,6 @@ export default function HRMSPortal() {
         {/* HR Tab Selection buttons */}
         <div className="flex gap-1 bg-slate-950 p-1 rounded-xl border border-slate-850">
           {[
-            { id: 'attendance', label: 'Attendance & Clock Logs' },
             { id: 'leaves', label: 'Leaves Planner' },
             { id: 'directory', label: 'Org Chart & Directory' }
           ].map(tab => (
@@ -237,100 +236,7 @@ export default function HRMSPortal() {
         </div>
       </div>
 
-      {/* ==================================================== */}
-      {/* 🕒 TAB 1: ATTENDANCE & TIME CLOCK */}
-      {/* ==================================================== */}
-      {activeSubTab === 'attendance' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
-          {/* Left Check-in card - 4 cols */}
-          <div className="lg:col-span-4 bg-slate-900/30 border border-slate-800 rounded-2xl p-6 backdrop-blur-md text-center space-y-4">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">Clock Status</h2>
-            
-            <div className="p-6 bg-slate-950/60 rounded-xl border border-slate-850 flex flex-col justify-center items-center gap-1">
-              <span className="text-[10px] text-slate-550 font-bold uppercase tracking-wider">Work Timer</span>
-              <span className="text-2xl font-mono font-bold text-slate-205">{timerText}</span>
-              <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-1">
-                <Clock className="w-3.5 h-3.5" />
-                <span>Clocked in: {isClockedIn ? new Date(clockInTime!).toLocaleTimeString() : 'Not clocked in'}</span>
-              </div>
-            </div>
 
-            {/* Attendance trigger buttons */}
-            <div className="space-y-2">
-              {!isClockedIn ? (
-                <button
-                  onClick={() => triggerClockIn()}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow"
-                >
-                  Clock In Today
-                </button>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={triggerBreak}
-                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all ${
-                      isOnBreak
-                        ? 'bg-amber-600 hover:bg-amber-500 border-amber-500 text-white'
-                        : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    {isOnBreak ? 'End Break' : 'Take Break'}
-                  </button>
-                  <button
-                    onClick={triggerClockOut}
-                    className="flex-1 bg-red-600 hover:bg-red-505 text-white font-bold py-2.5 rounded-xl text-xs transition-all"
-                  >
-                    Clock Out
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <p className="text-[10px] text-slate-500 italic">
-              Attendance records are geo-verified. Latex entries after 09:15 AM require HR review log notes.
-            </p>
-          </div>
-
-          {/* Right Attendance table - 8 cols */}
-          <div className="lg:col-span-8 bg-slate-900/30 border border-slate-800 rounded-2xl p-6 backdrop-blur-md">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Past Attendance Records</h2>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-900 text-slate-400 font-bold border-b border-slate-800">
-                    <th className="p-3">Work Date</th>
-                    <th className="p-3">Check In</th>
-                    <th className="p-3">Check Out</th>
-                    <th className="p-3">Worked Hours</th>
-                    <th className="p-3">Attendance status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {userAttendanceLogs.map(log => (
-                    <tr key={log.id} className="hover:bg-slate-900/20">
-                      <td className="p-3 font-semibold text-slate-200">{log.date}</td>
-                      <td className="p-3 text-slate-350">{log.checkIn ? new Date(log.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--'}</td>
-                      <td className="p-3 text-slate-350">{log.checkOut ? new Date(log.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--'}</td>
-                      <td className="p-3 text-slate-350">{log.workingHours ? `${log.workingHours} hrs` : '--'}</td>
-                      <td className="p-3">
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${
-                          log.status === 'Present' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                          log.status === 'Late' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
-                        }`}>
-                          {log.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-        </div>
-      )}
 
       {/* ==================================================== */}
       {/* 📅 TAB 2: LEAVE PLANNER */}
