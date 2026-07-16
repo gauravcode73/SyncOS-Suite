@@ -516,7 +516,7 @@ export const pushRecordToSupabase = async (tableName: string, data: any): Promis
 
     const { error } = await supabase.from(tableName).upsert(mapped);
     if (error) {
-      console.error(`[Supabase Sync] Upsert to ${tableName} failed:`, error);
+      console.error(`[Supabase Sync] Upsert to ${tableName} failed:`, error.message, error);
     }
   } catch (err) {
     console.error(`[Supabase Sync] Error during upsert task to ${tableName}:`, err);
@@ -530,7 +530,7 @@ export const deleteRecordFromSupabase = async (tableName: string, id: string): P
   try {
     const { error } = await supabase.from(tableName).delete().eq('id', id);
     if (error) {
-      console.error(`[Supabase Sync] Deletion from ${tableName} failed:`, error);
+      console.error(`[Supabase Sync] Deletion from ${tableName} failed:`, error.message, error);
     }
   } catch (err) {
     console.error(`[Supabase Sync] Error during deletion task from ${tableName}:`, err);
