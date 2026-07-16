@@ -462,13 +462,7 @@ export const getCurrentUser = (): Profile | null => {
   if (typeof window === 'undefined') return null;
   const userJson = localStorage.getItem(USER_KEY);
   if (!userJson) {
-    // Default logged-in user is Vikram (Super Admin) for easy first-glance testing
-    const db = getDb();
-    const defaultUser = db.profiles.find(p => p.id === 'emp-001') || null;
-    if (defaultUser) {
-      localStorage.setItem(USER_KEY, JSON.stringify(defaultUser));
-    }
-    return defaultUser;
+    return null;
   }
   try {
     const storedUser = JSON.parse(userJson) as Profile;
