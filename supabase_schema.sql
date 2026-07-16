@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 );
 
 -- Set department manager foreign key back to profiles
+ALTER TABLE departments DROP CONSTRAINT IF EXISTS fk_departments_head;
 ALTER TABLE departments ADD CONSTRAINT fk_departments_head FOREIGN KEY (head_id) REFERENCES profiles(id) ON DELETE SET NULL;
 
 -- 3. Teams Table
