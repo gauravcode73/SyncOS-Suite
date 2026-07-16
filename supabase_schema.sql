@@ -235,6 +235,14 @@ INSERT INTO departments (id, name, description, head_id, color, icon, employee_c
 ('dept-customer', 'Customer Support', 'Customer tickets, chats and documentation', NULL, '#06b6d4', 'Headphones', 0)
 ON CONFLICT (id) DO NOTHING;
 
+-- Seed Super Admin Profile (Gaurav Upadhyay)
+INSERT INTO profiles (id, employee_id, name, email, department_id, designation, mobile, role, manager_id, joining_date, status, avatar_url, skills, documents, online_status, last_active) VALUES
+('emp-001', '01', 'Gaurav Upadhyay', 'gaurav.bellework@gmail.com', 'dept-development', 'Technical Executive', '7303164526', 'Super Admin', NULL, '2026-07-17', 'Active', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', '["React", "Next.js", "Supabase", "PostgreSQL", "TypeScript", "System Architecture"]'::jsonb, '[]'::jsonb, 'online', '2026-07-17T00:00:00.000Z')
+ON CONFLICT (id) DO NOTHING;
+
+-- Set head of Development to Gaurav Upadhyay
+UPDATE departments SET head_id = 'emp-001' WHERE id = 'dept-development';
+
 -- Seed Chat Channels
 INSERT INTO chat_rooms (id, name, type, department_id, team_id, project_id, member_ids, muted_ids, starred_ids, archived_ids) VALUES
 ('room-general', '📢 General Announcement', 'announcement', NULL, NULL, NULL, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb),

@@ -259,7 +259,27 @@ const seedDepartments: Department[] = [
   { id: 'dept-customer', name: 'Customer Support', description: 'Customer tickets, chats and documentation', headId: null, color: '#06b6d4', icon: 'Headphones', employeeCount: 0 }
 ];
 
-const seedProfiles: Profile[] = [];
+const seedProfiles: Profile[] = [
+  {
+    id: 'emp-001',
+    employeeId: '01',
+    name: 'Gaurav Upadhyay',
+    email: 'gaurav.bellework@gmail.com',
+    departmentId: 'dept-development',
+    designation: 'Technical Executive',
+    mobile: '7303164526',
+    role: 'Super Admin',
+    managerId: null,
+    joiningDate: '2026-07-17',
+    status: 'Active',
+    avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+    skills: ['React', 'Next.js', 'Supabase', 'PostgreSQL', 'TypeScript', 'System Architecture'],
+    documents: [],
+    onlineStatus: 'online',
+    lastActive: new Date().toISOString()
+  }
+];
+
 
 const seedTeams: Team[] = [];
 
