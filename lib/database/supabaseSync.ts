@@ -536,3 +536,37 @@ export const deleteRecordFromSupabase = async (tableName: string, id: string): P
     console.error(`[Supabase Sync] Error during deletion task from ${tableName}:`, err);
   }
 };
+
+// 4. PUSH ALL LOCAL DATA TO CLOUD (INITIAL SEED)
+export const pushAllToSupabase = async (db: DB): Promise<void> => {
+  if (!isSupabaseConfigured || !supabase) return;
+
+  console.log('[Supabase Sync] Starting cloud database initialization with local data...');
+
+  const tables = [
+    { key: 'departments', dbTable: 'departments' },
+    { key: 'profiles', dbTable: 'profiles' },
+    { key: 'teams', dbTable: 'teams' },
+    { key: 'projects', dbTable: 'projects' },
+    { key: 'tasks', dbTable: 'tasks' },
+    { key: 'chatRooms', dbTable: 'chat_rooms' },
+    { key: 'messages', dbTable: 'messages' },
+    { key: 'meetingRooms', dbTable: 'meeting_rooms' },
+    { key: 'attendance', dbTable: 'attendance' },
+    { key: 'leaveRequests', dbTable: 'leave_requests' },
+    { key: 'documents', dbTable: 'documents' },
+    { key: 'announcements', dbTable: 'announcements' },
+    { key: 'auditLogs', dbTable: 'audit_logs' },
+    { key: 'activityLogs', dbTable: 'activity_logs' }
+  ];
+
+  for (const t of tables) {
+    const list = (db as any)[t.key] || [];
+    for (const item of list) {
+      await pushRecordToSupabase(t.dbTable, item);
+    }
+  }
+
+  console.log('[Supabase Sync] Cloud database initialization complete.');
+};
+

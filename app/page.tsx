@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Shield, Key, User, Mail, Smartphone, Building, Award, Plus, Check, Loader2 } from 'lucide-react';
 import { getDb, saveDb, setCurrentUser, getCurrentUser, addActivityLog, Profile } from '@/lib/database/mockDb';
 import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
-import { pullFromSupabase } from '@/lib/database/supabaseSync';
+import { pullFromSupabase, pushAllToSupabase } from '@/lib/database/supabaseSync';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,14 +39,19 @@ export default function LoginPage() {
 
     // Pull latest profiles from Supabase to sync onboarding approvals
     if (isSupabaseConfigured) {
-      pullFromSupabase().then(pulled => {
+      pullFromSupabase().then(async (pulled) => {
         if (pulled) {
           const currentLocal = getDb();
-          const merged = {
-            ...pulled,
-            notifications: currentLocal.notifications || []
-          };
-          saveDb(merged as any);
+          // If Supabase has no profiles, seed the database with local initial data
+          if (!pulled.profiles || pulled.profiles.length === 0) {
+            await pushAllToSupabase(currentLocal);
+          } else {
+            const merged = {
+              ...pulled,
+              notifications: currentLocal.notifications || []
+            };
+            saveDb(merged as any);
+          }
         }
       });
     }

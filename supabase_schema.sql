@@ -249,3 +249,22 @@ INSERT INTO documents (id, name, file_path, folder_id, is_folder, size, mime_typ
 ('sop-hr-policy', 'Employee Work Ethics & Leave Policy.md', '/storage/Employee-Ethics-Leave-Policy.md', 'fld-root-sop', FALSE, '15 KB', 'text/markdown', 'system', TRUE, 'HR Policy', 3, '# Company Leave and Working Hour Policies\n\nWelcome to our Company Operating System. Our core work policy requires professional collaboration.\n\n### 1. Working Hours\n- Standard work hours are **9:00 AM to 6:00 PM** local time.\n- Grace period for late entry is **15 minutes**. Check-ins after 9:15 AM are classified as "Late Entry".\n\n### 2. Leaves Allocation\n- Employees receive **18 Paid Leaves** annually (allocated as 1.5 leaves per month).\n- Casual Leaves: Maximum of 2 consecutive days.\n- Sick Leave requests must include a medical note if exceeding 2 consecutive days.\n\n### 3. Collaboration Standard\n- All work chats, file storage, and task assignments MUST occur within this platform.\n- Administrators monitor public channels and audit system tables for compliance.', '[]'::jsonb, '2026-01-10T10:00:00.000Z', '2026-07-05T14:00:00.000Z'),
 ('sop-it-vpn', 'IT Network VPN & System Setup.md', '/storage/IT-VPN-Setup-SOP.md', 'fld-root-sop', FALSE, '12 KB', 'text/markdown', 'system', TRUE, 'IT SOP', 1, '# IT VPN Access & Security Guidelines\n\nAll employees accessing database nodes, deployment clusters, or testing sandboxes must connect via the corporate VPN.\n\n### Access Prerequisites\n1. Install the OpenVPN client profile downloaded from the IT Support portal.\n2. Enable Multi-Factor Authentication via Authenticator app.\n3. Never share server credentials in private message channels.\n\nFor support, raise a ticket inside the IT Department chat channel or contact Vikram Malhotra.', '[]'::jsonb, '2026-04-12T11:00:00.000Z', '2026-04-12T11:00:00.000Z')
 ON CONFLICT (id) DO NOTHING;
+
+-- ====================================================
+253: -- 🔒 ROW LEVEL SECURITY (RLS) SETTINGS
+254: -- ====================================================
+255: -- Disable RLS on all tables to allow client-side offline-first sync engine to function cleanly.
+256: ALTER TABLE departments DISABLE ROW LEVEL SECURITY;
+257: ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
+258: ALTER TABLE teams DISABLE ROW LEVEL SECURITY;
+259: ALTER TABLE projects DISABLE ROW LEVEL SECURITY;
+260: ALTER TABLE tasks DISABLE ROW LEVEL SECURITY;
+261: ALTER TABLE chat_rooms DISABLE ROW LEVEL SECURITY;
+262: ALTER TABLE messages DISABLE ROW LEVEL SECURITY;
+263: ALTER TABLE meeting_rooms DISABLE ROW LEVEL SECURITY;
+264: ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
+265: ALTER TABLE leave_requests DISABLE ROW LEVEL SECURITY;
+266: ALTER TABLE documents DISABLE ROW LEVEL SECURITY;
+267: ALTER TABLE announcements DISABLE ROW LEVEL SECURITY;
+268: ALTER TABLE audit_logs DISABLE ROW LEVEL SECURITY;
+269: ALTER TABLE activity_logs DISABLE ROW LEVEL SECURITY;
