@@ -19,9 +19,11 @@ export default function AdminEmployeesPage() {
     const handleStorage = (event: StorageEvent) => {
       if (event.key === 'enterprise_os_db_v6') refreshProfiles();
     };
+    const interval = window.setInterval(() => refreshProfiles(), 1500);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('storage', handleStorage);
     return () => {
+      window.clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('storage', handleStorage);
     };
