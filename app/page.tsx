@@ -178,7 +178,7 @@ export default function EmployeeLoginPage() {
         role: 'Employee',
         managerId: null,
         joiningDate: new Date().toISOString().split('T')[0],
-        status: 'Pending Approval',
+        status: 'Active',
         avatarUrl: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 100000)}?w=150`,
         skills: [],
         documents: [],
@@ -210,24 +210,9 @@ export default function EmployeeLoginPage() {
         timestamp: new Date().toISOString()
       });
 
-      // Notify Super Admins & HR
-      const admins = currentDb.profiles.filter(p => ['Super Admin', 'HR Admin'].includes(p.role));
-      admins.forEach(admin => {
-        currentDb.notifications.unshift({
-          id: `notif-${Date.now()}-${admin.id}`,
-          profileId: admin.id,
-          title: 'Employee Access Request',
-          body: `${newProfile.name} (${newProfile.designation}) has requested access. Check Admin Panel.`,
-          type: 'announcement',
-          isRead: false,
-          referenceId: newProfile.id,
-          createdAt: new Date().toISOString()
-        });
-      });
-
       saveDb(currentDb);
 
-      setSuccess('Access request submitted successfully! An administrator will review your account.');
+      setSuccess('Account created successfully. You can sign in now.');
       setIsLoading(false);
 
       // Clear fields
