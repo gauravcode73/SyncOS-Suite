@@ -33,6 +33,16 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'enterprise_os_db_v5') {
+        refreshDbState();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  useEffect(() => {
     const activeUser = getCurrentUser();
     if (!activeUser) {
       router.push('/');

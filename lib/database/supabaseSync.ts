@@ -28,6 +28,7 @@ const mapProfileFromDb = (p: any): Profile => ({
   name: p.name || '',
   email: p.email || '',
   departmentId: p.department_id || null,
+  teamId: p.team_id || null,
   designation: p.designation || '',
   mobile: p.mobile || '',
   role: p.role || 'Employee',
@@ -49,6 +50,7 @@ const mapProfileToDb = (p: Profile): any => ({
   name: p.name,
   email: p.email,
   department_id: p.departmentId,
+  team_id: p.teamId,
   designation: p.designation,
   mobile: p.mobile,
   role: p.role,
@@ -138,19 +140,30 @@ const mapTaskFromDb = (t: any): Task => ({
   name: t.name,
   description: t.description || '',
   priority: t.priority || 'Medium',
-  status: t.status || 'To Do',
+  status: t.status || 'Assigned',
   departmentId: t.department_id || null,
+  teamId: t.team_id || null,
   assigneeIds: Array.isArray(t.assignee_ids) ? t.assignee_ids : [],
+  seniorId: t.senior_id || null,
+  qaReviewerId: t.qa_reviewer_id || null,
+  requiresQA: t.requires_qa || false,
+  rejectionReason: t.rejection_reason || null,
+  submissionNotes: t.submission_notes || null,
+  dependencyTaskId: t.dependency_task_id || null,
   startDate: t.start_date || '',
   deadline: t.deadline || '',
   estimatedHours: Number(t.estimated_hours || 0),
   actualHours: Number(t.actual_hours || 0),
   progress: t.progress || 0,
+  tags: Array.isArray(t.tags) ? t.tags : [],
   subtasks: Array.isArray(t.subtasks) ? t.subtasks : [],
   checklist: Array.isArray(t.checklist) ? t.checklist : [],
   comments: Array.isArray(t.comments) ? t.comments : [],
   attachments: Array.isArray(t.attachments) ? t.attachments : [],
-  timeline: Array.isArray(t.timeline) ? t.timeline : []
+  timeline: Array.isArray(t.timeline) ? t.timeline : [],
+  isDeleted: t.is_deleted || false,
+  deletedAt: t.deleted_at || undefined,
+  completedAt: t.completed_at || undefined,
 });
 
 const mapTaskToDb = (t: Task): any => ({
@@ -161,17 +174,28 @@ const mapTaskToDb = (t: Task): any => ({
   priority: t.priority,
   status: t.status,
   department_id: t.departmentId,
+  team_id: t.teamId,
   assignee_ids: t.assigneeIds,
+  senior_id: t.seniorId,
+  qa_reviewer_id: t.qaReviewerId,
+  requires_qa: t.requiresQA,
+  rejection_reason: t.rejectionReason,
+  submission_notes: t.submissionNotes,
   start_date: t.startDate,
   deadline: t.deadline,
   estimated_hours: t.estimatedHours,
   actual_hours: t.actualHours,
   progress: t.progress,
+  tags: t.tags,
   subtasks: t.subtasks,
   checklist: t.checklist,
   comments: t.comments,
   attachments: t.attachments,
-  timeline: t.timeline
+  timeline: t.timeline,
+  is_deleted: t.isDeleted,
+  deleted_at: t.deletedAt,
+  completed_at: t.completedAt,
+  // dependency_task_id stored in JSONB as part of metadata
 });
 
 // 6. ChatRoom
@@ -516,7 +540,12 @@ export const pushRecordToSupabase = async (tableName: string, data: any): Promis
 
     const { error } = await supabase.from(tableName).upsert(mapped);
     if (error) {
-      console.error(`[Supabase Sync] Upsert to ${tableName} failed:`, error.message, error);
+      const message = error?.message || '';
+      const isMissingTable = message.includes('does not exist') || message.includes('schema cache') || message.includes('Could not find the table');
+      const isMissingColumn = message.includes('Could not find the') && message.includes('column');
+      if (!isMissingTable && !isMissingColumn) {
+        console.error(`[Supabase Sync] Upsert to ${tableName} failed:`, message, error);
+      }
     }
   } catch (err) {
     console.error(`[Supabase Sync] Error during upsert task to ${tableName}:`, err);
@@ -530,7 +559,11 @@ export const deleteRecordFromSupabase = async (tableName: string, id: string): P
   try {
     const { error } = await supabase.from(tableName).delete().eq('id', id);
     if (error) {
-      console.error(`[Supabase Sync] Deletion from ${tableName} failed:`, error.message, error);
+      const message = error?.message || '';
+      const isMissingTable = message.includes('does not exist') || message.includes('schema cache') || message.includes('Could not find the table');
+      if (!isMissingTable) {
+        console.error(`[Supabase Sync] Deletion from ${tableName} failed:`, message, error);
+      }
     }
   } catch (err) {
     console.error(`[Supabase Sync] Error during deletion task from ${tableName}:`, err);

@@ -50,6 +50,10 @@ CREATE TABLE IF NOT EXISTS teams (
   description TEXT
 );
 
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS team_id TEXT;
+ALTER TABLE profiles DROP CONSTRAINT IF EXISTS fk_profiles_team;
+ALTER TABLE profiles ADD CONSTRAINT fk_profiles_team FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL;
+
 -- 4. Projects Table
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
@@ -71,19 +75,30 @@ CREATE TABLE IF NOT EXISTS tasks (
   name TEXT NOT NULL,
   description TEXT,
   priority TEXT NOT NULL DEFAULT 'Medium',
-  status TEXT NOT NULL DEFAULT 'To Do',
+  status TEXT NOT NULL DEFAULT 'Assigned',
   department_id TEXT REFERENCES departments(id) ON DELETE SET NULL,
+  team_id TEXT REFERENCES teams(id) ON DELETE SET NULL,
   assignee_ids JSONB DEFAULT '[]'::jsonb,
+  senior_id TEXT REFERENCES profiles(id) ON DELETE SET NULL,
+  qa_reviewer_id TEXT REFERENCES profiles(id) ON DELETE SET NULL,
+  requires_qa BOOLEAN DEFAULT FALSE,
+  rejection_reason TEXT,
+  submission_notes TEXT,
+  dependency_task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
   start_date TEXT,
   deadline TEXT,
   estimated_hours NUMERIC DEFAULT 0,
   actual_hours NUMERIC DEFAULT 0,
   progress INTEGER DEFAULT 0,
+  tags JSONB DEFAULT '[]'::jsonb,
   subtasks JSONB DEFAULT '[]'::jsonb,
   checklist JSONB DEFAULT '[]'::jsonb,
   comments JSONB DEFAULT '[]'::jsonb,
   attachments JSONB DEFAULT '[]'::jsonb,
-  timeline JSONB DEFAULT '[]'::jsonb
+  timeline JSONB DEFAULT '[]'::jsonb,
+  is_deleted BOOLEAN DEFAULT FALSE,
+  deleted_at TEXT,
+  completed_at TEXT
 );
 
 -- 6. Chat Rooms Table (Slack channels / DMs)
@@ -246,7 +261,6 @@ UPDATE departments SET head_id = 'emp-001' WHERE id = 'dept-development';
 -- Seed Chat Channels
 INSERT INTO chat_rooms (id, name, type, department_id, team_id, project_id, member_ids, muted_ids, starred_ids, archived_ids) VALUES
 ('room-general', '📢 General Announcement', 'announcement', NULL, NULL, NULL, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb),
-('room-random', '☕ Watercooler Chat', 'department', NULL, NULL, NULL, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb),
 ('room-announcements', '📣 Corporate Circulars', 'announcement', NULL, NULL, NULL, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb),
 ('room-it', '🛠 IT & Tech Support', 'department', NULL, NULL, NULL, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)
 ON CONFLICT (id) DO NOTHING;
@@ -257,6 +271,83 @@ INSERT INTO documents (id, name, file_path, folder_id, is_folder, size, mime_typ
 ('sop-hr-policy', 'Employee Work Ethics & Leave Policy.md', '/storage/Employee-Ethics-Leave-Policy.md', 'fld-root-sop', FALSE, '15 KB', 'text/markdown', 'system', TRUE, 'HR Policy', 3, '# Company Leave and Working Hour Policies\n\nWelcome to our Company Operating System. Our core work policy requires professional collaboration.\n\n### 1. Working Hours\n- Standard work hours are **9:00 AM to 6:00 PM** local time.\n- Grace period for late entry is **15 minutes**. Check-ins after 9:15 AM are classified as "Late Entry".\n\n### 2. Leaves Allocation\n- Employees receive **18 Paid Leaves** annually (allocated as 1.5 leaves per month).\n- Casual Leaves: Maximum of 2 consecutive days.\n- Sick Leave requests must include a medical note if exceeding 2 consecutive days.\n\n### 3. Collaboration Standard\n- All work chats, file storage, and task assignments MUST occur within this platform.\n- Administrators monitor public channels and audit system tables for compliance.', '[]'::jsonb, '2026-01-10T10:00:00.000Z', '2026-07-05T14:00:00.000Z'),
 ('sop-it-vpn', 'IT Network VPN & System Setup.md', '/storage/IT-VPN-Setup-SOP.md', 'fld-root-sop', FALSE, '12 KB', 'text/markdown', 'system', TRUE, 'IT SOP', 1, '# IT VPN Access & Security Guidelines\n\nAll employees accessing database nodes, deployment clusters, or testing sandboxes must connect via the corporate VPN.\n\n### Access Prerequisites\n1. Install the OpenVPN client profile downloaded from the IT Support portal.\n2. Enable Multi-Factor Authentication via Authenticator app.\n3. Never share server credentials in private message channels.\n\nFor support, raise a ticket inside the IT Department chat channel or contact Vikram Malhotra.', '[]'::jsonb, '2026-04-12T11:00:00.000Z', '2026-04-12T11:00:00.000Z')
 ON CONFLICT (id) DO NOTHING;
+
+-- ====================================================
+-- ➕ ADDITIONAL TABLES USED BY THE SYNC ENGINE
+-- ====================================================
+
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  start_time TEXT,
+  end_time TEXT,
+  type TEXT NOT NULL DEFAULT 'event',
+  created_by TEXT,
+  department_id TEXT REFERENCES departments(id) ON DELETE SET NULL,
+  profile_ids JSONB DEFAULT '[]'::jsonb,
+  created_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS automation_rules (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  trigger TEXT NOT NULL,
+  conditions JSONB DEFAULT '[]'::jsonb,
+  actions JSONB DEFAULT '[]'::jsonb,
+  is_enabled BOOLEAN DEFAULT TRUE,
+  priority INTEGER DEFAULT 0,
+  execution_logs JSONB DEFAULT '[]'::jsonb,
+  created_by TEXT,
+  created_at TEXT,
+  last_triggered_at TEXT,
+  trigger_count INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS reports (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL,
+  filters JSONB DEFAULT '{}'::jsonb,
+  created_by TEXT,
+  created_at TEXT,
+  scheduled_at TEXT,
+  is_scheduled BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS notification_preferences (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT REFERENCES profiles(id) ON DELETE CASCADE,
+  critical BOOLEAN DEFAULT TRUE,
+  high BOOLEAN DEFAULT TRUE,
+  normal BOOLEAN DEFAULT TRUE,
+  silent BOOLEAN DEFAULT TRUE,
+  department BOOLEAN DEFAULT TRUE,
+  project BOOLEAN DEFAULT TRUE,
+  personal BOOLEAN DEFAULT TRUE,
+  broadcast BOOLEAN DEFAULT TRUE,
+  daily_digest BOOLEAN DEFAULT TRUE,
+  weekly_digest BOOLEAN DEFAULT FALSE,
+  email_notifications BOOLEAN DEFAULT TRUE,
+  browser_notifications BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS workload_snapshots (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT REFERENCES profiles(id) ON DELETE CASCADE,
+  active_tasks INTEGER DEFAULT 0,
+  pending_tasks INTEGER DEFAULT 0,
+  overdue_tasks INTEGER DEFAULT 0,
+  completed_this_week INTEGER DEFAULT 0,
+  avg_completion_hours NUMERIC DEFAULT 0,
+  productivity_score NUMERIC DEFAULT 0,
+  weekly_capacity_hours NUMERIC DEFAULT 0,
+  used_capacity_hours NUMERIC DEFAULT 0,
+  estimated_free_hours NUMERIC DEFAULT 0,
+  is_overloaded BOOLEAN DEFAULT FALSE,
+  calculated_at TEXT
+);
 
 -- ====================================================
 -- 🔒 ROW LEVEL SECURITY (RLS) SETTINGS
@@ -276,4 +367,9 @@ ALTER TABLE documents DISABLE ROW LEVEL SECURITY;
 ALTER TABLE announcements DISABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_logs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE calendar_events DISABLE ROW LEVEL SECURITY;
+ALTER TABLE automation_rules DISABLE ROW LEVEL SECURITY;
+ALTER TABLE reports DISABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_preferences DISABLE ROW LEVEL SECURITY;
+ALTER TABLE workload_snapshots DISABLE ROW LEVEL SECURITY;
 
