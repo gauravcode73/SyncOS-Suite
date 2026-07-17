@@ -11,7 +11,11 @@ export default function AdminEmployeesPage() {
   const [editDesignation, setEditDesignation] = useState('');
   const [editRole, setEditRole] = useState<any>('Employee');
 
-  const refreshProfiles = () => setProfiles(getDb().profiles);
+  const refreshProfiles = () => {
+    const db = getDb();
+    const latest = db.profiles.map(p => ({ ...p }));
+    setProfiles(latest);
+  };
 
   useEffect(() => {
     refreshProfiles();

@@ -170,6 +170,7 @@ export default function EmployeeLoginPage() {
         employeeId: regEmpId.toUpperCase(),
         name: regName,
         email: regEmail,
+        password: regPassword,
         departmentId: regDeptId,
         teamId: null,
         designation: regDesignation,
@@ -188,6 +189,13 @@ export default function EmployeeLoginPage() {
       };
 
       currentDb.profiles.push(newProfile);
+      const storedDb = JSON.parse(localStorage.getItem('enterprise_os_db_v6') || 'null');
+      if (storedDb) {
+        storedDb.profiles = currentDb.profiles;
+        storedDb.auditLogs = currentDb.auditLogs;
+        storedDb.notifications = currentDb.notifications;
+        localStorage.setItem('enterprise_os_db_v6', JSON.stringify(storedDb));
+      }
 
       // Log activity & audit
       currentDb.auditLogs.unshift({
