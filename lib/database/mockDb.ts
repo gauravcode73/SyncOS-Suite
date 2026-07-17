@@ -21,6 +21,7 @@ export interface Profile {
   employeeId: string;
   name: string;
   email: string;
+  password?: string;
   departmentId: string | null;
   teamId: string | null;
   designation: string;
@@ -476,6 +477,7 @@ const seedProfiles: Profile[] = [
     employeeId: '01',
     name: 'Gaurav Upadhyay',
     email: 'gaurav.bellework@gmail.com',
+    password: 'Admin@123',
     departmentId: 'dept-development',
     teamId: null,
     designation: 'Technical Executive',

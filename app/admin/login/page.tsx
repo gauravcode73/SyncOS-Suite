@@ -49,6 +49,12 @@ export default function AdminLoginPage() {
         return;
       }
 
+      if (user.password && password !== user.password) {
+        setError('Invalid password for this administrator account.');
+        setIsLoading(false);
+        return;
+      }
+
       if (!['Super Admin', 'HR Admin', 'Department Admin', 'Manager', 'Team Lead'].includes(user.role)) {
         setError('Access denied. This portal is reserved for administrators and managers only.');
         setIsLoading(false);
@@ -128,6 +134,10 @@ export default function AdminLoginPage() {
             {success}
           </div>
         )}
+
+        <div className="mb-4 rounded-xl border border-violet-500/20 bg-violet-500/5 px-3 py-2 text-[11px] text-slate-400">
+          Demo admin credentials: <span className="font-semibold text-foreground">gaurav.bellework@gmail.com</span> / <span className="font-semibold text-foreground">Admin@123</span>
+        </div>
 
         <form onSubmit={handleSignIn} className="space-y-4">
           <div>

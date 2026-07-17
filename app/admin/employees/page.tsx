@@ -11,8 +11,20 @@ export default function AdminEmployeesPage() {
   const [editDesignation, setEditDesignation] = useState('');
   const [editRole, setEditRole] = useState<any>('Employee');
 
+  const refreshProfiles = () => setProfiles(getDb().profiles);
+
   useEffect(() => {
-    setProfiles(getDb().profiles);
+    refreshProfiles();
+    const handleFocus = () => refreshProfiles();
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'enterprise_os_db_v6') refreshProfiles();
+    };
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   const handleApprove = (id: string) => {
