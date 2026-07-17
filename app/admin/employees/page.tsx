@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getDb, saveDb, addAuditLog, Profile } from '@/lib/database/mockDb';
-import { UserCheck, UserMinus, Shield, Edit2, Check, X, Search, CheckCircle } from 'lucide-react';
+import { UserCheck, UserMinus, Shield, Edit2, Check, X, Search, CheckCircle, Trash2 } from 'lucide-react';
 
 export default function AdminEmployeesPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -52,6 +52,24 @@ export default function AdminEmployeesPage() {
       addAuditLog('system', `${action} Employee Account`, 'profiles', id, `Updated account status to ${db.profiles[idx].status} for: ${db.profiles[idx].name}`);
       saveDb(db);
       setProfiles([...db.profiles]);
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    if (id === 'emp-001') {
+      alert("Cannot delete the root super admin account.");
+      return;
+    }
+    if (confirm("Are you sure you want to permanently delete this employee account? This action cannot be undone.")) {
+      const db = getDb();
+      const idx = db.profiles.findIndex(p => p.id === id);
+      if (idx !== -1) {
+        const name = db.profiles[idx].name;
+        db.profiles.splice(idx, 1);
+        addAuditLog('system', 'Delete Employee Account', 'profiles', id, `Permanently deleted employee account for: ${name}`);
+        saveDb(db);
+        setProfiles([...db.profiles]);
+      }
     }
   };
 
@@ -221,6 +239,16 @@ export default function AdminEmployeesPage() {
                           <UserCheck className="w-3.5 h-3.5" />
                         </button>
                       ) : null}
+
+                      {p.id !== 'emp-001' && (
+                        <button
+                          onClick={() => handleDelete(p.id)}
+                          className="border border-red-500/20 text-red-500 hover:bg-red-500/20 hover:text-red-400 p-1 rounded transition-all"
+                          title="Delete Employee Account"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
