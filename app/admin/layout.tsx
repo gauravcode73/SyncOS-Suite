@@ -13,6 +13,7 @@ import { canAccessAdminPortal, getRoleBadgeColor } from '@/lib/rbac';
 import { useTheme } from '@/app/ThemeContext';
 import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
 import { pullFromSupabase, pushAllToSupabase } from '@/lib/database/supabaseSync';
+import CopilotDrawer from '@/app/components/CopilotDrawer';
 
 interface NavItem {
   name: string;
@@ -341,6 +342,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
       </div>
+      <CopilotDrawer />
     </div>
   );
 }

@@ -23,6 +23,7 @@ import { canAccessAdminPortal } from '@/lib/rbac';
 import { DashboardProvider, useDashboard } from '../dashboard/DashboardContext';
 import { getCurrentUser, setCurrentUser, addActivityLog, Profile, getDb, Notification } from '@/lib/database/mockDb';
 import { useTheme } from '@/app/ThemeContext';
+import CopilotDrawer from '@/app/components/CopilotDrawer';
 
 function EmployeeDashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -260,6 +261,7 @@ function EmployeeDashboardLayoutContent({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+      <CopilotDrawer />
     </div>
   );
 }
