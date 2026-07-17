@@ -35,6 +35,13 @@ export default function EmployeeLoginPage() {
   const db = getDb();
   const departments = db.departments;
 
+  const formatDisplayName = (enteredEmail: string): string => {
+    const localPart = (enteredEmail || '').trim().split('@')[0] || 'Employee';
+    return localPart
+      .replace(/[._-]+/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase()) || 'Employee';
+  };
+
   const ensureFallbackEmployee = (currentDb: ReturnType<typeof getDb>, enteredEmail: string): Profile | null => {
     const normalizedEmail = (enteredEmail || '').trim().toLowerCase();
     if (!normalizedEmail.includes('@')) return null;
@@ -44,10 +51,15 @@ export default function EmployeeLoginPage() {
 
     if (normalizedEmail === 'gaurav.bellework@gmail.com') return null;
 
+    currentDb.profiles = currentDb.profiles.filter((profile) => {
+      const isStaleDemo = profile.id === 'emp-002' || profile.email?.toLowerCase() === 'employee@example.com' || profile.name === 'Demo Employee';
+      return !isStaleDemo;
+    });
+
     const fallbackProfile: Profile = {
-      id: 'emp-002',
-      employeeId: '02',
-      name: 'Demo Employee',
+      id: `emp-${Date.now()}`,
+      employeeId: `EMP-${Date.now().toString().slice(-4)}`,
+      name: formatDisplayName(normalizedEmail),
       email: normalizedEmail,
       password: password || 'employee123',
       departmentId: 'dept-development',
@@ -235,13 +247,6 @@ export default function EmployeeLoginPage() {
 
       currentDb.profiles = [currentDb.profiles.find(p => p.id === 'emp-001')!, ...currentDb.profiles.filter(p => p.id !== 'emp-001')];
       currentDb.profiles.push(newProfile);
-      const storedDb = JSON.parse(localStorage.getItem('enterprise_os_db_v6') || 'null');
-      if (storedDb) {
-        storedDb.profiles = currentDb.profiles;
-        storedDb.auditLogs = currentDb.auditLogs;
-        storedDb.notifications = currentDb.notifications;
-        localStorage.setItem('enterprise_os_db_v6', JSON.stringify(storedDb));
-      }
 
       // Log activity & audit
       currentDb.auditLogs.unshift({
@@ -261,6 +266,7 @@ export default function EmployeeLoginPage() {
       setIsLoading(false);
 
       // Clear fields
+      const emailToPrefill = regEmail;
       setRegName('');
       setRegEmail('');
       setRegEmpId('');
@@ -270,7 +276,7 @@ export default function EmployeeLoginPage() {
 
       setTimeout(() => {
         setActiveTab('signin');
-        setEmail(regEmail);
+        setEmail(emailToPrefill);
         setSuccess('');
       }, 3000);
     }, 1200);

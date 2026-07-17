@@ -493,28 +493,6 @@ const seedProfiles: Profile[] = [
     lastActive: new Date().toISOString(),
     performanceScore: 98,
     weeklyCapacityHours: 40
-  },
-  {
-    id: 'emp-002',
-    employeeId: '02',
-    name: 'Demo Employee',
-    email: 'employee@example.com',
-    password: 'employee123',
-    departmentId: 'dept-development',
-    teamId: null,
-    designation: 'Software Engineer',
-    mobile: '9999999999',
-    role: 'Employee',
-    managerId: 'emp-001',
-    joiningDate: '2026-07-17',
-    status: 'Active',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-    skills: ['TypeScript'],
-    documents: [],
-    onlineStatus: 'offline',
-    lastActive: new Date().toISOString(),
-    performanceScore: 85,
-    weeklyCapacityHours: 40
   }
 ];
 
@@ -680,8 +658,7 @@ export const getDb = (): DB => {
   }
   try {
     const parsed = JSON.parse(stored) as DB;
-    const cleanedProfiles = (parsed.profiles || []).filter((p: Profile) => p.id === 'emp-001' || p.id === 'emp-002');
-    const mergedProfiles = mergeById(seedProfiles, cleanedProfiles);
+    const mergedProfiles = mergeById(seedProfiles, (parsed.profiles || []) as Profile[]);
     const mergedDepartments = mergeById(seedDepartments, parsed.departments);
     const mergedChatRooms = mergeById(seedChatRooms, parsed.chatRooms);
     const mergedDocuments = mergeById(seedDocuments, parsed.documents as any);
