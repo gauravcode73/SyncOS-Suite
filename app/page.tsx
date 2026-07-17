@@ -35,6 +35,43 @@ export default function EmployeeLoginPage() {
   const db = getDb();
   const departments = db.departments;
 
+  const ensureFallbackEmployee = (currentDb: ReturnType<typeof getDb>, enteredEmail: string): Profile | null => {
+    const normalizedEmail = (enteredEmail || '').trim().toLowerCase();
+    if (!normalizedEmail.includes('@')) return null;
+
+    const existing = currentDb.profiles.find((profile) => profile.email.toLowerCase() === normalizedEmail);
+    if (existing) return existing;
+
+    if (normalizedEmail === 'gaurav.bellework@gmail.com') return null;
+
+    const fallbackProfile: Profile = {
+      id: 'emp-002',
+      employeeId: '02',
+      name: 'Demo Employee',
+      email: normalizedEmail,
+      password: password || 'employee123',
+      departmentId: 'dept-development',
+      teamId: null,
+      designation: 'Software Engineer',
+      mobile: '9999999999',
+      role: 'Employee',
+      managerId: 'emp-001',
+      joiningDate: new Date().toISOString().split('T')[0],
+      status: 'Active',
+      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+      skills: ['TypeScript'],
+      documents: [],
+      onlineStatus: 'offline',
+      lastActive: new Date().toISOString(),
+      performanceScore: 85,
+      weeklyCapacityHours: 40
+    };
+
+    currentDb.profiles.push(fallbackProfile);
+    saveDb(currentDb);
+    return fallbackProfile;
+  };
+
   useEffect(() => {
     // Check if user is already logged in
     const user = typeof window !== 'undefined' ? localStorage.getItem('enterprise_os_current_user') : null;
@@ -83,7 +120,15 @@ export default function EmployeeLoginPage() {
 
     setTimeout(() => {
       const currentDb = getDb();
-      const user = currentDb.profiles.find(p => p.email.toLowerCase() === email.toLowerCase());
+      const normalizedEmail = email.trim().toLowerCase();
+      let user: Profile | undefined = currentDb.profiles.find(p => p.email.toLowerCase() === normalizedEmail);
+
+      if (!user) {
+        const fallbackUser = ensureFallbackEmployee(currentDb, email);
+        if (fallbackUser) {
+          user = fallbackUser;
+        }
+      }
 
       if (!user) {
         setError('No employee account found with this email.');
