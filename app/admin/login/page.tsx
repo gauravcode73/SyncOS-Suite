@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
               ...pulled,
               notifications: currentLocal.notifications || []
             };
-            saveDb(merged as any);
+            saveDb(merged as any, true);
           }
         }
       });

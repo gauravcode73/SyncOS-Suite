@@ -59,7 +59,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [router, pathname]);
 
   useEffect(() => {
-    if (isSupabaseConfigured) {
+    if (!isSupabaseConfigured) return;
+
+    const sync = () => {
       pullFromSupabase().then(async (pulled) => {
         if (pulled) {
           const currentLocal = getDb();
@@ -70,7 +72,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               ...pulled,
               notifications: currentLocal.notifications || []
             };
-            saveDb(merged as any);
+            saveDb(merged as any, true);
             const currentUser = getCurrentUser();
             if (currentUser) {
               setUser(currentUser);
@@ -79,7 +81,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           }
         }
       });
-    }
+    };
+
+    sync();
+    const interval = setInterval(sync, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {

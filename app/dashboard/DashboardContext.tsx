@@ -45,7 +45,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isSupabaseConfigured) {
+    if (!isSupabaseConfigured) return;
+
+    const sync = () => {
       pullFromSupabase().then(async (pulled) => {
         if (pulled) {
           const currentLocal = getDb();
@@ -56,12 +58,16 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
               ...pulled,
               notifications: currentLocal.notifications || []
             };
-            saveDb(merged as any);
+            saveDb(merged as any, true);
             refreshDbState();
           }
         }
       });
-    }
+    };
+
+    sync();
+    const interval = setInterval(sync, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {

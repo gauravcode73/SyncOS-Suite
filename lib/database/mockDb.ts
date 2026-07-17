@@ -735,12 +735,12 @@ const syncDelta = async (oldDb: DB, newDb: DB) => {
   }
 };
 
-export const saveDb = (db: DB): void => {
+export const saveDb = (db: DB, skipCloudSync: boolean = false): void => {
   if (typeof window === 'undefined') return;
   const oldStored = localStorage.getItem(DB_KEY);
   localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && !skipCloudSync) {
     try {
       const oldDb: DB = oldStored ? JSON.parse(oldStored) : initialDB;
       syncDelta(oldDb, db);

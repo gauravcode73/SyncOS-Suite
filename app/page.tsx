@@ -108,7 +108,7 @@ export default function EmployeeLoginPage() {
               ...pulled,
               notifications: currentLocal.notifications || []
             };
-            saveDb(merged as any);
+            saveDb(merged as any, true);
           }
         }
       });
