@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getDb, saveDb, getCurrentUser, setCurrentUser, addActivityLog, Profile, Attendance } from '@/lib/database/mockDb';
+import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
+import { pullFromSupabase, pushAllToSupabase } from '@/lib/database/supabaseSync';
 
 interface DashboardContextType {
   user: Profile | null;
@@ -34,12 +36,32 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'enterprise_os_db_v5') {
+      if (e.key === 'enterprise_os_db_v6') {
         refreshDbState();
       }
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      pullFromSupabase().then(async (pulled) => {
+        if (pulled) {
+          const currentLocal = getDb();
+          if (!pulled.profiles || pulled.profiles.length === 0) {
+            await pushAllToSupabase(currentLocal);
+          } else {
+            const merged = {
+              ...pulled,
+              notifications: currentLocal.notifications || []
+            };
+            saveDb(merged as any);
+            refreshDbState();
+          }
+        }
+      });
+    }
   }, []);
 
   useEffect(() => {

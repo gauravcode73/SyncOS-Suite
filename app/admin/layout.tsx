@@ -8,9 +8,11 @@ import {
   Video, LogOut, Menu, X, Sun, Moon, Shield, Bell, Settings, ListTodo,
   UsersRound, BarChart3, ClipboardList, Zap, FileSearch, ChevronRight, Dot
 } from 'lucide-react';
-import { getDb, setCurrentUser, getCurrentUser, Profile } from '@/lib/database/mockDb';
+import { getDb, setCurrentUser, getCurrentUser, Profile, saveDb } from '@/lib/database/mockDb';
 import { canAccessAdminPortal, getRoleBadgeColor } from '@/lib/rbac';
 import { useTheme } from '@/app/ThemeContext';
+import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
+import { pullFromSupabase, pushAllToSupabase } from '@/lib/database/supabaseSync';
 
 interface NavItem {
   name: string;
@@ -55,6 +57,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setUser(currentUser);
     refreshNotifications(currentUser);
   }, [router, pathname]);
+
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      pullFromSupabase().then(async (pulled) => {
+        if (pulled) {
+          const currentLocal = getDb();
+          if (!pulled.profiles || pulled.profiles.length === 0) {
+            await pushAllToSupabase(currentLocal);
+          } else {
+            const merged = {
+              ...pulled,
+              notifications: currentLocal.notifications || []
+            };
+            saveDb(merged as any);
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+              setUser(currentUser);
+              refreshNotifications(currentUser);
+            }
+          }
+        }
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (!user) return;

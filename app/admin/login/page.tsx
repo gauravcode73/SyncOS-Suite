@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, Key, Mail, Eye, EyeOff, Loader2, Check } from 'lucide-react';
-import { getDb, setCurrentUser, addActivityLog, Profile } from '@/lib/database/mockDb';
+import { getDb, setCurrentUser, addActivityLog, Profile, saveDb } from '@/lib/database/mockDb';
 import { useTheme } from '@/app/ThemeContext';
+import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
+import { pullFromSupabase, pushAllToSupabase } from '@/lib/database/supabaseSync';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -30,6 +32,24 @@ export default function AdminLoginPage() {
           router.push('/admin/dashboard');
         }
       } catch (e) {}
+    }
+
+    // Pull database updates
+    if (isSupabaseConfigured) {
+      pullFromSupabase().then(async (pulled) => {
+        if (pulled) {
+          const currentLocal = getDb();
+          if (!pulled.profiles || pulled.profiles.length === 0) {
+            await pushAllToSupabase(currentLocal);
+          } else {
+            const merged = {
+              ...pulled,
+              notifications: currentLocal.notifications || []
+            };
+            saveDb(merged as any);
+          }
+        }
+      });
     }
   }, [router]);
 
