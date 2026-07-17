@@ -235,7 +235,7 @@ export default function EmployeeLoginPage() {
         role: 'Employee',
         managerId: null,
         joiningDate: new Date().toISOString().split('T')[0],
-        status: 'Active',
+        status: 'Pending Approval',
         avatarUrl: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 100000)}?w=150`,
         skills: [],
         documents: [],

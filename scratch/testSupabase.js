@@ -16,19 +16,34 @@ envContent.split('\n').forEach(line => {
 const supabaseUrl = env['NEXT_PUBLIC_SUPABASE_URL'];
 const supabaseAnonKey = env['NEXT_PUBLIC_SUPABASE_ANON_KEY'];
 
-console.log('Supabase URL:', supabaseUrl);
-
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+const tables = [
+  'profiles',
+  'departments',
+  'teams',
+  'projects',
+  'tasks',
+  'chat_rooms',
+  'messages',
+  'meeting_rooms',
+  'attendance',
+  'leave_requests',
+  'documents',
+  'announcements',
+  'audit_logs',
+  'activity_logs'
+];
+
 async function run() {
-  const { data: profiles, error } = await supabase.from('profiles').select('*');
-  if (error) {
-    console.error('Error fetching profiles:', error);
-  } else {
-    console.log('Profiles in Supabase:');
-    profiles.forEach(p => {
-      console.log(`- ID: ${p.id}, Name: ${p.name}, Email: ${p.email}, Designation: ${p.designation}`);
-    });
+  console.log('Testing individual Supabase table queries:');
+  for (const table of tables) {
+    const { data, error } = await supabase.from(table).select('*');
+    if (error) {
+      console.error(`❌ Table "${table}" failed:`, error.message);
+    } else {
+      console.log(`✅ Table "${table}" succeeded, row count: ${data ? data.length : 0}`);
+    }
   }
 }
 
