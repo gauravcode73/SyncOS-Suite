@@ -188,6 +188,7 @@ export default function EmployeeLoginPage() {
         location: 'Remote IP'
       };
 
+      currentDb.profiles = [currentDb.profiles.find(p => p.id === 'emp-001')!, ...currentDb.profiles.filter(p => p.id !== 'emp-001')];
       currentDb.profiles.push(newProfile);
       const storedDb = JSON.parse(localStorage.getItem('enterprise_os_db_v6') || 'null');
       if (storedDb) {

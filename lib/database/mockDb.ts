@@ -477,7 +477,7 @@ const seedProfiles: Profile[] = [
     employeeId: '01',
     name: 'Gaurav Upadhyay',
     email: 'gaurav.bellework@gmail.com',
-    password: 'Admin@123',
+    password: '14123240',
     departmentId: 'dept-development',
     teamId: null,
     designation: 'Technical Executive',
@@ -633,6 +633,22 @@ const initialDB: DB = {
 const DB_KEY = 'enterprise_os_db_v6';
 const USER_KEY = 'enterprise_os_current_user';
 
+const mergeById = <T extends { id: string }>(seed: T[], stored: T[] | undefined): T[] => {
+  const seedMap = new Map(seed.map(item => [item.id, item]));
+  const merged: T[] = [];
+  const storedItems = stored || [];
+  for (const item of storedItems) {
+    const seedItem = seedMap.get(item.id);
+    merged.push(seedItem ? { ...seedItem, ...item } : item);
+  }
+  for (const seedItem of seed) {
+    if (!merged.some(item => item.id === seedItem.id)) {
+      merged.push(seedItem);
+    }
+  }
+  return merged;
+};
+
 export const getDb = (): DB => {
   if (typeof window === 'undefined') return initialDB;
   const stored = localStorage.getItem(DB_KEY);
@@ -642,10 +658,22 @@ export const getDb = (): DB => {
   }
   try {
     const parsed = JSON.parse(stored) as DB;
+    const cleanedProfiles = (parsed.profiles || []).filter((p: Profile) => p.id === 'emp-001');
+    const mergedProfiles = mergeById(seedProfiles, cleanedProfiles);
+    const mergedDepartments = mergeById(seedDepartments, parsed.departments);
+    const mergedChatRooms = mergeById(seedChatRooms, parsed.chatRooms);
+    const mergedDocuments = mergeById(seedDocuments, parsed.documents as any);
+    const mergedAnnouncements = mergeById(seedAnnouncements, parsed.announcements as any);
+    const mergedAutomationRules = mergeById(seedAutomationRules, parsed.automationRules as any);
     return {
       ...initialDB,
       ...parsed,
-      automationRules: parsed.automationRules || seedAutomationRules,
+      profiles: mergedProfiles as Profile[],
+      departments: mergedDepartments as Department[],
+      chatRooms: mergedChatRooms as ChatRoom[],
+      documents: mergedDocuments as DocumentFile[],
+      announcements: mergedAnnouncements as Announcement[],
+      automationRules: mergedAutomationRules as AutomationRule[],
       workloadSnapshots: parsed.workloadSnapshots || [],
       reports: parsed.reports || [],
       notificationPreferences: parsed.notificationPreferences || [],

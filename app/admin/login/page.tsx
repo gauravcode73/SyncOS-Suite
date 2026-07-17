@@ -136,7 +136,7 @@ export default function AdminLoginPage() {
         )}
 
         <div className="mb-4 rounded-xl border border-violet-500/20 bg-violet-500/5 px-3 py-2 text-[11px] text-slate-400">
-          Demo admin credentials: <span className="font-semibold text-foreground">gaurav.bellework@gmail.com</span> / <span className="font-semibold text-foreground">Admin@123</span>
+          Use the registered admin account credentials.
         </div>
 
         <form onSubmit={handleSignIn} className="space-y-4">
