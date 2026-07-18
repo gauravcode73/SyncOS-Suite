@@ -53,13 +53,13 @@ export default function EmployeeLoginPage() {
 
     if (normalizedEmail === 'gaurav.bellework@gmail.com') return null;
 
-    currentDb.profiles = currentDb.profiles.filter((profile) => {
-      const isStaleDemo = profile.id === 'emp-002' || profile.email?.toLowerCase() === 'employee@example.com' || profile.name === 'Demo Employee';
-      return !isStaleDemo;
-    });
+    const stableId = 'emp-' + normalizedEmail.replace(/[^a-z0-9]/g, '-');
+
+    const existingById = currentDb.profiles.find((profile) => profile.id === stableId);
+    if (existingById) return existingById;
 
     const fallbackProfile: Profile = {
-      id: `emp-${Date.now()}`,
+      id: stableId,
       employeeId: `EMP-${Date.now().toString().slice(-4)}`,
       name: formatDisplayName(normalizedEmail),
       email: normalizedEmail,

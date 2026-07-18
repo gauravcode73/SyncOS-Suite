@@ -16,8 +16,9 @@ export const calculateWorkload = (profileId: string): WorkloadSnapshot => {
 
   const myTasks = db.tasks.filter(t => {
     if (t.isDeleted) return false;
-    const isAssignee = t.assigneeIds.includes(profileId) || 
-      t.assigneeIds.some(id => {
+    const assigneeIds = t.assigneeIds || [];
+    const isAssignee = assigneeIds.includes(profileId) || 
+      assigneeIds.some(id => {
         if (profile && (id.toLowerCase() === profile.name.toLowerCase() || id.toLowerCase() === profile.email.toLowerCase())) {
           return true;
         }

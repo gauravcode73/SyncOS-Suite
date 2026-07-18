@@ -80,11 +80,12 @@ function TaskDetailDrawer({
   const [activeTab, setActiveTab] = useState<'details' | 'checklist' | 'comments' | 'timeline'>('details');
 
   const project = projects.find(p => p.id === task.projectId);
-  const assignees = profiles.filter(p => task.assigneeIds.includes(p.id));
+  const assigneeIds = task.assigneeIds || [];
+  const assignees = profiles.filter(p => assigneeIds.includes(p.id));
   const senior = task.seniorId ? profiles.find(p => p.id === task.seniorId) : null;
   const isSeniorReviewer = task.seniorId === user.id;
-  const isAssignee = task.assigneeIds.includes(user.id) || 
-    task.assigneeIds.some(id => {
+  const isAssignee = assigneeIds.includes(user.id) || 
+    assigneeIds.some(id => {
       if (id.toLowerCase() === user.name.toLowerCase() || id.toLowerCase() === user.email.toLowerCase()) {
         return true;
       }
@@ -897,8 +898,9 @@ export default function EmployeeDashboardPage() {
     if (!user) return;
     const db = getDb();
     const tasks = db.tasks.filter(t => {
-      const isAssignee = t.assigneeIds.includes(user.id) || 
-        t.assigneeIds.some(id => {
+      const assigneeIds = t.assigneeIds || [];
+      const isAssignee = assigneeIds.includes(user.id) || 
+        assigneeIds.some(id => {
           if (id.toLowerCase() === user.name.toLowerCase() || id.toLowerCase() === user.email.toLowerCase()) {
             return true;
           }

@@ -17,9 +17,15 @@ export default function AdminChatMonitorPage() {
     const currentDb = getDb();
     setDb(currentDb);
     setRooms(currentDb.chatRooms);
-    if (!selectedRoom && currentDb.chatRooms.length > 0) {
-      setSelectedRoom(currentDb.chatRooms[0]);
-    }
+    setSelectedRoom(prev => {
+      if (!prev && currentDb.chatRooms.length > 0) {
+        return currentDb.chatRooms[0];
+      }
+      if (prev) {
+        return currentDb.chatRooms.find(r => r.id === prev.id) || null;
+      }
+      return prev;
+    });
   };
 
   useEffect(() => {

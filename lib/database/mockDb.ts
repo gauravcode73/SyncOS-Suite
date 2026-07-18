@@ -514,6 +514,28 @@ const seedProfiles: Profile[] = [
     lastActive: new Date().toISOString(),
     performanceScore: 98,
     weeklyCapacityHours: 40
+  },
+  {
+    id: 'emp-employee-example-com',
+    employeeId: '02',
+    name: 'Demo Employee',
+    email: 'employee@example.com',
+    password: 'employee123',
+    departmentId: 'dept-development',
+    teamId: null,
+    designation: 'Software Engineer',
+    mobile: '9999999999',
+    role: 'Employee',
+    managerId: 'emp-001',
+    joiningDate: '2026-07-17',
+    status: 'Active',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+    skills: ['TypeScript'],
+    documents: [],
+    onlineStatus: 'offline',
+    lastActive: new Date().toISOString(),
+    performanceScore: 85,
+    weeklyCapacityHours: 40
   }
 ];
 
