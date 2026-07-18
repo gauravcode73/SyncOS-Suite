@@ -2,23 +2,39 @@
 
 import React, { useState, useEffect } from 'react';
 import { getDb, saveDb, addAuditLog, Profile } from '@/lib/database/mockDb';
-import { UserCheck, UserMinus, Shield, Edit2, Check, X, Search, CheckCircle, Trash2 } from 'lucide-react';
+import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
+import { pushRecordToSupabase, pullFromSupabase } from '@/lib/database/supabaseSync';
+import { UserCheck, UserMinus, Shield, Edit2, Check, X, Search, CheckCircle, Trash2, Building } from 'lucide-react';
 
 export default function AdminEmployeesPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [departments, setDepartments] = useState<{id:string; name:string}[]>([]);
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDesignation, setEditDesignation] = useState('');
   const [editRole, setEditRole] = useState<any>('Employee');
+  const [editDeptId, setEditDeptId] = useState<string | null>(null);
 
   const refreshProfiles = () => {
     const db = getDb();
     const latest = db.profiles.map(p => ({ ...p }));
     setProfiles(latest);
+    setDepartments(db.departments.map(d => ({ id: d.id, name: d.name })));
   };
 
   useEffect(() => {
     refreshProfiles();
+    // If Supabase is configured, pull fresh data first so we always show the latest
+    if (isSupabaseConfigured) {
+      pullFromSupabase().then((pulled) => {
+        if (pulled && pulled.profiles && pulled.profiles.length > 0) {
+          const db = getDb();
+          const merged = { ...pulled, notifications: db.notifications || [] };
+          saveDb(merged as any, true);
+          refreshProfiles();
+        }
+      });
+    }
     const handleFocus = () => refreshProfiles();
     const handleStorage = (event: StorageEvent) => {
       if (event.key === 'enterprise_os_db_v6') refreshProfiles();
@@ -40,6 +56,10 @@ export default function AdminEmployeesPage() {
       db.profiles[idx].status = 'Active';
       addAuditLog('system', 'Approve Employee Onboarding', 'profiles', id, `Approved access request for employee: ${db.profiles[idx].name}`);
       saveDb(db);
+      // Immediately push approved profile to Supabase for cross-device sync
+      if (isSupabaseConfigured) {
+        pushRecordToSupabase('profiles', db.profiles[idx]);
+      }
       setProfiles([...db.profiles]);
     }
   };
@@ -77,6 +97,7 @@ export default function AdminEmployeesPage() {
     setEditingId(p.id);
     setEditDesignation(p.designation);
     setEditRole(p.role);
+    setEditDeptId(p.departmentId);
   };
 
   const saveEdit = (id: string) => {
@@ -84,11 +105,18 @@ export default function AdminEmployeesPage() {
     const idx = db.profiles.findIndex(p => p.id === id);
     if (idx !== -1) {
       const p = db.profiles[idx];
-      const oldDetails = `Designation: ${p.designation}, Role: ${p.role}`;
+      const oldDeptName = departments.find(d => d.id === p.departmentId)?.name || 'Unassigned';
+      const newDeptName = departments.find(d => d.id === editDeptId)?.name || 'Unassigned';
+      const oldDetails = `Designation: ${p.designation}, Role: ${p.role}, Department: ${oldDeptName}`;
       p.designation = editDesignation;
       p.role = editRole;
-      addAuditLog('system', 'Edit Employee Profile', 'profiles', id, `Changed profile from [${oldDetails}] to [Designation: ${editDesignation}, Role: ${editRole}]`);
+      p.departmentId = editDeptId;
+      addAuditLog('system', 'Edit Employee Profile', 'profiles', id, `Changed profile from [${oldDetails}] to [Designation: ${editDesignation}, Role: ${editRole}, Department: ${newDeptName}]`);
       saveDb(db);
+      // Immediately push updated profile to Supabase for cross-device sync
+      if (isSupabaseConfigured) {
+        pushRecordToSupabase('profiles', db.profiles[idx]);
+      }
       setProfiles([...db.profiles]);
       setEditingId(null);
     }
@@ -124,7 +152,8 @@ export default function AdminEmployeesPage() {
             <thead>
               <tr className="bg-slate-900/10 border-b border-border/80 text-slate-400 font-bold uppercase tracking-wider">
                 <th className="p-4">Employee ID / Name</th>
-                <th className="p-4">Contact & Department</th>
+                <th className="p-4">Contact & Designation</th>
+                <th className="p-4">Department</th>
                 <th className="p-4">System Role</th>
                 <th className="p-4">Security Status</th>
                 <th className="p-4 text-right">Actions</th>
@@ -156,6 +185,27 @@ export default function AdminEmployeesPage() {
                         <p className="text-[10px] text-slate-400 font-medium">{p.designation}</p>
                       )}
                     </div>
+                  </td>
+                  <td className="p-4">
+                    {editingId === p.id ? (
+                      <div className="flex items-center gap-1">
+                        <Building className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <select
+                          value={editDeptId || ''}
+                          onChange={(e) => setEditDeptId(e.target.value || null)}
+                          className="bg-slate-900 border border-border rounded text-[10px] px-1 py-0.5 outline-none focus:border-violet-500 text-white max-w-[140px]"
+                        >
+                          <option value="">Unassigned</option>
+                          {departments.map(d => (
+                            <option key={d.id} value={d.id}>{d.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-slate-400">
+                        {departments.find(d => d.id === p.departmentId)?.name || <span className="text-amber-500 italic">Unassigned</span>}
+                      </span>
+                    )}
                   </td>
                   <td className="p-4">
                     {editingId === p.id ? (

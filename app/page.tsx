@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Key, Mail, Eye, EyeOff, Loader2, Smartphone, Building, Award, ShieldAlert } from 'lucide-react';
+import { User, Key, Mail, Eye, EyeOff, Loader2, Smartphone, Award, ShieldAlert } from 'lucide-react';
 import { getDb, saveDb, setCurrentUser, addActivityLog, Profile } from '@/lib/database/mockDb';
 import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
-import { pullFromSupabase, pushAllToSupabase } from '@/lib/database/supabaseSync';
+import { pullFromSupabase, pushAllToSupabase, pushRecordToSupabase } from '@/lib/database/supabaseSync';
 import { useTheme } from '@/app/ThemeContext';
 
 export default function EmployeeLoginPage() {
@@ -27,13 +27,15 @@ export default function EmployeeLoginPage() {
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regEmpId, setRegEmpId] = useState('');
-  const [regDeptId, setRegDeptId] = useState('dept-development');
   const [regDesignation, setRegDesignation] = useState('');
   const [regMobile, setRegMobile] = useState('');
   const [regPassword, setRegPassword] = useState('');
 
-  const db = getDb();
-  const departments = db.departments;
+  // Company branding — reflects admin settings
+  const [companyName, setCompanyName] = useState(() => {
+    if (typeof window === 'undefined') return 'SyncOS Workspace';
+    return getDb().companySettings?.name || 'SyncOS Workspace';
+  });
 
   const formatDisplayName = (enteredEmail: string): string => {
     const localPart = (enteredEmail || '').trim().split('@')[0] || 'Employee';
@@ -110,9 +112,19 @@ export default function EmployeeLoginPage() {
             };
             saveDb(merged as any, true);
           }
+          // Refresh company name after pull
+          setCompanyName(getDb().companySettings?.name || 'SyncOS Workspace');
         }
       });
     }
+
+    // Keep company name in sync with localStorage changes (e.g. admin saves settings in another tab)
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'enterprise_os_db_v6') {
+        setCompanyName(getDb().companySettings?.name || 'SyncOS Workspace');
+      }
+    };
+    window.addEventListener('storage', handleStorage);
 
     // Retrieve remembered email
     if (typeof window !== 'undefined') {
@@ -122,6 +134,8 @@ export default function EmployeeLoginPage() {
         setRememberMe(true);
       }
     }
+
+    return () => window.removeEventListener('storage', handleStorage);
   }, [router]);
 
   const handleSignIn = (e: React.FormEvent) => {
@@ -228,7 +242,7 @@ export default function EmployeeLoginPage() {
         name: regName,
         email: regEmail,
         password: regPassword,
-        departmentId: regDeptId,
+        departmentId: null,
         teamId: null,
         designation: regDesignation,
         mobile: regMobile,
@@ -261,8 +275,12 @@ export default function EmployeeLoginPage() {
       });
 
       saveDb(currentDb);
+      // Immediately push new registration to Supabase so admins on other devices see it right away
+      if (isSupabaseConfigured) {
+        pushRecordToSupabase('profiles', newProfile);
+      }
 
-      setSuccess('Account created successfully. You can sign in now.');
+      setSuccess('Account created successfully. Your request is pending admin approval.');
       setIsLoading(false);
 
       // Clear fields
@@ -301,7 +319,7 @@ export default function EmployeeLoginPage() {
 
       <div className="mb-6 text-center">
         <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-indigo-500">
-          SyncOS Workspace
+          {companyName}
         </h1>
         <p className="text-sm text-slate-400 mt-1 max-w-sm">
           Collaborate on tasks, documents, chat, and online calls.
@@ -483,19 +501,8 @@ export default function EmployeeLoginPage() {
 
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Department</label>
-              <div className="relative">
-                <Building className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" />
-                <select
-                  value={regDeptId}
-                  onChange={(e) => setRegDeptId(e.target.value)}
-                  className="w-full bg-slate-900/10 dark:bg-slate-950/60 border border-border focus:border-violet-500 text-foreground rounded-lg py-2 pl-9 pr-3 text-xs outline-none transition-all appearance-none"
-                >
-                  {departments.map((d) => (
-                    <option key={d.id} value={d.id} className="bg-card text-foreground">
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
+              <div className="relative flex items-center px-3 py-2 border border-border rounded-lg bg-slate-900/10 dark:bg-slate-950/60">
+                <span className="text-xs text-slate-500 italic">Assigned by admin after approval</span>
               </div>
             </div>
 
