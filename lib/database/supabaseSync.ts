@@ -470,59 +470,74 @@ const mapActivityLogToDb = (a: ActivityLog): any => ({
 // 🚀 BACKGROUND SYNC ENGINE
 // ====================================================
 
+const safeSelect = async (tableName: string): Promise<any[]> => {
+  if (!isSupabaseConfigured || !supabase) return [];
+  try {
+    const { data, error } = await supabase.from(tableName).select('*');
+    if (error) {
+      console.warn(`[Supabase Sync] Failed to select from table ${tableName}:`, error.message);
+      return [];
+    }
+    return data || [];
+  } catch (e) {
+    console.warn(`[Supabase Sync] Error selecting from table ${tableName}:`, e);
+    return [];
+  }
+};
+
 // 1. PULL ENTIRE CLOUD DATABASE
 export const pullFromSupabase = async (): Promise<Partial<DB> | null> => {
   if (!isSupabaseConfigured || !supabase) return null;
 
   try {
     const [
-      { data: profiles },
-      { data: departments },
-      { data: teams },
-      { data: projects },
-      { data: tasks },
-      { data: rooms },
-      { data: messages },
-      { data: meetings },
-      { data: attendance },
-      { data: leaves },
-      { data: docs },
-      { data: announcements },
-      { data: audit },
-      { data: activity }
+      profiles,
+      departments,
+      teams,
+      projects,
+      tasks,
+      rooms,
+      messages,
+      meetings,
+      attendance,
+      leaves,
+      docs,
+      announcements,
+      audit,
+      activity
     ] = await Promise.all([
-      supabase.from('profiles').select('*'),
-      supabase.from('departments').select('*'),
-      supabase.from('teams').select('*'),
-      supabase.from('projects').select('*'),
-      supabase.from('tasks').select('*'),
-      supabase.from('chat_rooms').select('*'),
-      supabase.from('messages').select('*'),
-      supabase.from('meeting_rooms').select('*'),
-      supabase.from('attendance').select('*'),
-      supabase.from('leave_requests').select('*'),
-      supabase.from('documents').select('*'),
-      supabase.from('announcements').select('*'),
-      supabase.from('audit_logs').select('*'),
-      supabase.from('activity_logs').select('*')
+      safeSelect('profiles'),
+      safeSelect('departments'),
+      safeSelect('teams'),
+      safeSelect('projects'),
+      safeSelect('tasks'),
+      safeSelect('chat_rooms'),
+      safeSelect('messages'),
+      safeSelect('meeting_rooms'),
+      safeSelect('attendance'),
+      safeSelect('leave_requests'),
+      safeSelect('documents'),
+      safeSelect('announcements'),
+      safeSelect('audit_logs'),
+      safeSelect('activity_logs')
     ]);
 
     return {
-      profiles: (profiles || []).map(mapProfileFromDb),
-      departments: (departments || []).map(mapDepartmentFromDb),
-      teams: (teams || []).map(mapTeamFromDb),
-      projects: (projects || []).map(mapProjectFromDb),
-      tasks: (tasks || []).map(mapTaskFromDb),
-      chatRooms: (rooms || []).map(mapChatRoomFromDb),
-      messages: (messages || []).map(mapMessageFromDb),
-      meetingRooms: (meetings || []).map(mapMeetingRoomFromDb),
-      attendance: (attendance || []).map(mapAttendanceFromDb),
-      leaveRequests: (leaves || []).map(mapLeaveRequestFromDb),
-      documents: (docs || []).map(mapDocumentFromDb),
-      announcements: (announcements || []).map(mapAnnouncementFromDb),
+      profiles: profiles.map(mapProfileFromDb),
+      departments: departments.map(mapDepartmentFromDb),
+      teams: teams.map(mapTeamFromDb),
+      projects: projects.map(mapProjectFromDb),
+      tasks: tasks.map(mapTaskFromDb),
+      chatRooms: rooms.map(mapChatRoomFromDb),
+      messages: messages.map(mapMessageFromDb),
+      meetingRooms: meetings.map(mapMeetingRoomFromDb),
+      attendance: attendance.map(mapAttendanceFromDb),
+      leaveRequests: leaves.map(mapLeaveRequestFromDb),
+      documents: docs.map(mapDocumentFromDb),
+      announcements: announcements.map(mapAnnouncementFromDb),
       notifications: [], // notifications handled client-only
-      activityLogs: (activity || []).map(mapActivityLogFromDb),
-      auditLogs: (audit || []).map(mapAuditLogFromDb)
+      activityLogs: activity.map(mapActivityLogFromDb),
+      auditLogs: audit.map(mapAuditLogFromDb)
     };
   } catch (e) {
     console.error('[Supabase Sync] Pull query execution failed:', e);
