@@ -8,7 +8,7 @@ import {
   Video, LogOut, Menu, X, Sun, Moon, Shield, Bell, Settings, ListTodo,
   UsersRound, BarChart3, ClipboardList, Zap, FileSearch, ChevronRight, Dot, Trash2
 } from 'lucide-react';
-import { getDb, setCurrentUser, getCurrentUser, Profile, saveDb } from '@/lib/database/mockDb';
+import { getDb, setCurrentUser, getCurrentUser, Profile, saveDb, mergeDbs } from '@/lib/database/mockDb';
 import { canAccessAdminPortal, getRoleBadgeColor } from '@/lib/rbac';
 import { useTheme } from '@/app/ThemeContext';
 import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
@@ -75,12 +75,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             if (hasAdmin) await pushAllToSupabase(currentLocal);
           } else {
             // Cloud wins — always merge cloud data into local
-            const merged = {
-              ...currentLocal,
-              ...pulled,
-              notifications: currentLocal.notifications || []
-            };
-            saveDb(merged as any, true);
+            const merged = mergeDbs(currentLocal, pulled);
+            merged.notifications = currentLocal.notifications || [];
+            saveDb(merged, true);
             const currentUser = getCurrentUser();
             if (currentUser) {
               setUser(currentUser);

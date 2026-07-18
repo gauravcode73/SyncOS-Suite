@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getDb, saveDb, getCurrentUser, setCurrentUser, addActivityLog, Profile, Attendance } from '@/lib/database/mockDb';
+import { getDb, saveDb, getCurrentUser, setCurrentUser, addActivityLog, Profile, Attendance, mergeDbs } from '@/lib/database/mockDb';
 import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
 import { pullFromSupabase, pushAllToSupabase } from '@/lib/database/supabaseSync';
 
@@ -54,12 +54,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           if (!pulled.profiles || pulled.profiles.length === 0) {
             await pushAllToSupabase(currentLocal);
           } else {
-            const merged = {
-              ...currentLocal,
-              ...pulled,
-              notifications: currentLocal.notifications || []
-            };
-            saveDb(merged as any, true);
+            const merged = mergeDbs(currentLocal, pulled);
+            merged.notifications = currentLocal.notifications || [];
+            saveDb(merged, true);
             refreshDbState();
           }
         }

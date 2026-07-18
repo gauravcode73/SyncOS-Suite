@@ -874,3 +874,31 @@ export const createNotification = (
   db.notifications.unshift(notif);
   saveDb(db);
 };
+
+export const mergeDbs = (local: DB, pulled: Partial<DB>): DB => {
+  const merged = { ...local };
+  const keys = [
+    'profiles', 'departments', 'teams', 'projects', 'tasks',
+    'chatRooms', 'messages', 'meetingRooms', 'attendance',
+    'leaveRequests', 'documents', 'announcements', 'auditLogs',
+    'activityLogs'
+  ] as const;
+
+  for (const key of keys) {
+    const localList = (local[key] || []) as any[];
+    const pulledList = (pulled[key] || []) as any[];
+    
+    const mergedList = [...pulledList];
+    const pulledIds = new Set(pulledList.map(item => item.id));
+    
+    for (const localItem of localList) {
+      if (!pulledIds.has(localItem.id)) {
+        mergedList.push(localItem);
+      }
+    }
+    
+    (merged as any)[key] = mergedList;
+  }
+  
+  return merged;
+};
