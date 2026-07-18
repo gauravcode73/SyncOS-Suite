@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getDb, saveDb, addAuditLog, Profile } from '@/lib/database/mockDb';
 import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
 import { pushRecordToSupabase, pullFromSupabase } from '@/lib/database/supabaseSync';
-import { UserCheck, UserMinus, Shield, Edit2, Check, X, Search, CheckCircle, Trash2, Building } from 'lucide-react';
+import { UserCheck, UserMinus, Edit2, Check, X, Search, CheckCircle, Trash2, Building, RefreshCw } from 'lucide-react';
 
 export default function AdminEmployeesPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -14,40 +14,55 @@ export default function AdminEmployeesPage() {
   const [editDesignation, setEditDesignation] = useState('');
   const [editRole, setEditRole] = useState<any>('Employee');
   const [editDeptId, setEditDeptId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const refreshProfiles = () => {
+  const refreshProfiles = useCallback(() => {
     const db = getDb();
     const latest = db.profiles.map(p => ({ ...p }));
     setProfiles(latest);
     setDepartments(db.departments.map(d => ({ id: d.id, name: d.name })));
-  };
+  }, []);
+
+  // Pull fresh data directly from Supabase and save to local cache
+  const syncFromCloud = useCallback(async (showSpinner = false) => {
+    if (!isSupabaseConfigured) return;
+    if (showSpinner) setIsSyncing(true);
+    try {
+      const pulled = await pullFromSupabase();
+      if (pulled && pulled.profiles && pulled.profiles.length > 0) {
+        const db = getDb();
+        const merged = { ...pulled, notifications: db.notifications || [] };
+        saveDb(merged as any, true);
+        refreshProfiles();
+      }
+    } finally {
+      if (showSpinner) setIsSyncing(false);
+    }
+  }, [refreshProfiles]);
 
   useEffect(() => {
-    refreshProfiles();
-    // If Supabase is configured, pull fresh data first so we always show the latest
-    if (isSupabaseConfigured) {
-      pullFromSupabase().then((pulled) => {
-        if (pulled && pulled.profiles && pulled.profiles.length > 0) {
-          const db = getDb();
-          const merged = { ...pulled, notifications: db.notifications || [] };
-          saveDb(merged as any, true);
-          refreshProfiles();
-        }
-      });
-    }
-    const handleFocus = () => refreshProfiles();
+    // Initial load: first pull from cloud, then keep local in sync
+    syncFromCloud(true).then(() => refreshProfiles());
+
+    // Fast local poll (picks up changes from admin layout's 5s cloud sync)
+    const localInterval = window.setInterval(() => refreshProfiles(), 1500);
+
+    // Direct cloud poll every 8 seconds — catches data from other devices
+    const cloudInterval = window.setInterval(() => syncFromCloud(false), 8000);
+
+    const handleFocus = () => { syncFromCloud(false); refreshProfiles(); };
     const handleStorage = (event: StorageEvent) => {
       if (event.key === 'enterprise_os_db_v6') refreshProfiles();
     };
-    const interval = window.setInterval(() => refreshProfiles(), 1500);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('storage', handleStorage);
     return () => {
-      window.clearInterval(interval);
+      window.clearInterval(localInterval);
+      window.clearInterval(cloudInterval);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('storage', handleStorage);
     };
-  }, []);
+  }, [syncFromCloud, refreshProfiles]);
 
   const handleApprove = (id: string) => {
     const db = getDb();
@@ -135,15 +150,26 @@ export default function AdminEmployeesPage() {
         <p className="text-xs text-slate-400 mt-1">Manage corporate accounts, roles, access permissions, and onboarding requests.</p>
       </div>
 
-      <div className="flex items-center gap-3 bg-card border border-border p-3 rounded-xl max-w-md shadow-sm">
-        <Search className="w-4 h-4 text-slate-500 shrink-0" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name, ID, designation..."
-          className="bg-transparent border-none text-sm outline-none w-full text-foreground placeholder-slate-500"
-        />
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 bg-card border border-border p-3 rounded-xl flex-1 max-w-md shadow-sm">
+          <Search className="w-4 h-4 text-slate-500 shrink-0" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name, ID, designation..."
+            className="bg-transparent border-none text-sm outline-none w-full text-foreground placeholder-slate-500"
+          />
+        </div>
+        <button
+          onClick={() => syncFromCloud(true)}
+          disabled={isSyncing}
+          title="Refresh from cloud database"
+          className="flex items-center gap-1.5 bg-card border border-border hover:border-violet-500/50 text-slate-400 hover:text-violet-400 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+          {isSyncing ? 'Syncing...' : 'Refresh'}
+        </button>
       </div>
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">

@@ -18,6 +18,7 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isDbSyncing, setIsDbSyncing] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSubmitted, setResetSubmitted] = useState(false);
@@ -34,13 +35,16 @@ export default function AdminLoginPage() {
       } catch (e) {}
     }
 
-    // Pull database updates
+    // Pull latest data from Supabase on load so login reads fresh records
     if (isSupabaseConfigured) {
+      setIsDbSyncing(true);
       pullFromSupabase().then(async (pulled) => {
         if (pulled) {
           const currentLocal = getDb();
           if (!pulled.profiles || pulled.profiles.length === 0) {
-            await pushAllToSupabase(currentLocal);
+            // Cloud is empty – seed it from local but ONLY if local has the admin profile
+            const hasAdmin = currentLocal.profiles.some(p => ['Super Admin', 'HR Admin'].includes(p.role));
+            if (hasAdmin) await pushAllToSupabase(currentLocal);
           } else {
             const merged = {
               ...pulled,
@@ -49,17 +53,28 @@ export default function AdminLoginPage() {
             saveDb(merged as any, true);
           }
         }
-      });
+      }).finally(() => setIsDbSyncing(false));
     }
   }, [router]);
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      // Always pull fresh data from Supabase before authenticating
+      // so the admin sees the latest employee list immediately after login
+      if (isSupabaseConfigured) {
+        const pulled = await pullFromSupabase();
+        if (pulled && pulled.profiles && pulled.profiles.length > 0) {
+          const currentLocal = getDb();
+          const merged = { ...pulled, notifications: currentLocal.notifications || [] };
+          saveDb(merged as any, true);
+        }
+      }
+
       const currentDb = getDb();
       const user = currentDb.profiles.find(p => p.email.toLowerCase() === email.toLowerCase());
 
@@ -93,7 +108,6 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // Simulation of remember me behavior
       if (rememberMe && typeof window !== 'undefined') {
         localStorage.setItem('admin_remembered_email', email);
       } else if (typeof window !== 'undefined') {
@@ -107,8 +121,11 @@ export default function AdminLoginPage() {
 
       setTimeout(() => {
         router.push('/admin/dashboard');
-      }, 1000);
-    }, 1200);
+      }, 800);
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.');
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = (e: React.FormEvent) => {
@@ -224,10 +241,15 @@ export default function AdminLoginPage() {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isDbSyncing}
             className="w-full bg-violet-600 hover:bg-violet-500 text-white rounded-xl py-3 font-semibold text-sm transition-all shadow-lg shadow-violet-600/15 active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {isLoading ? (
+            {isDbSyncing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Syncing data...
+              </>
+            ) : isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Authorizing Console Access...

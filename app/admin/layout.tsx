@@ -70,8 +70,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (pulled) {
           const currentLocal = getDb();
           if (!pulled.profiles || pulled.profiles.length === 0) {
-            await pushAllToSupabase(currentLocal);
+            // Only seed Supabase if local has admin accounts — never overwrite with empty/stale data
+            const hasAdmin = currentLocal.profiles.some(p => ['Super Admin', 'HR Admin'].includes(p.role));
+            if (hasAdmin) await pushAllToSupabase(currentLocal);
           } else {
+            // Cloud wins — always merge cloud data into local
             const merged = {
               ...pulled,
               notifications: currentLocal.notifications || []

@@ -104,7 +104,9 @@ export default function EmployeeLoginPage() {
         if (pulled) {
           const currentLocal = getDb();
           if (!pulled.profiles || pulled.profiles.length === 0) {
-            await pushAllToSupabase(currentLocal);
+            // Only seed Supabase if local actually has real admin data
+            const hasAdmin = currentLocal.profiles.some(p => ['Super Admin', 'HR Admin'].includes(p.role));
+            if (hasAdmin) await pushAllToSupabase(currentLocal);
           } else {
             const merged = {
               ...pulled,
