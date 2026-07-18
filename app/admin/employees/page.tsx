@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getDb, saveDb, addAuditLog, Profile } from '@/lib/database/mockDb';
 import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
-import { pushRecordToSupabase, pullFromSupabase } from '@/lib/database/supabaseSync';
+import { pushRecordToSupabase, pullFromSupabase, deleteRecordFromSupabase } from '@/lib/database/supabaseSync';
 import { UserCheck, UserMinus, Edit2, Check, X, Search, CheckCircle, Trash2, Building, RefreshCw } from 'lucide-react';
 
 export default function AdminEmployeesPage() {
@@ -103,6 +103,9 @@ export default function AdminEmployeesPage() {
         db.profiles.splice(idx, 1);
         addAuditLog('system', 'Delete Employee Account', 'profiles', id, `Permanently deleted employee account for: ${name}`);
         saveDb(db);
+        if (isSupabaseConfigured) {
+          deleteRecordFromSupabase('profiles', id);
+        }
         setProfiles([...db.profiles]);
       }
     }

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { getDb, saveDb, addAuditLog, Task, Project, Profile, Department } from '@/lib/database/mockDb';
 import { CheckSquare, Plus, Trash2, Calendar, FileText, CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
+import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
+import { deleteRecordFromSupabase } from '@/lib/database/supabaseSync';
 
 export default function AdminTasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -134,6 +136,9 @@ export default function AdminTasksPage() {
     db.tasks = db.tasks.filter(t => t.id !== id);
     addAuditLog('system', 'Delete Task', 'tasks', id, `Deleted task: ${taskToDelete.name}`);
     saveDb(db);
+    if (isSupabaseConfigured) {
+      deleteRecordFromSupabase('tasks', id);
+    }
 
     setTasks([...db.tasks]);
   };
