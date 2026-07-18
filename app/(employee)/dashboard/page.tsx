@@ -83,7 +83,11 @@ function TaskDetailDrawer({
   const assignees = profiles.filter(p => task.assigneeIds.includes(p.id));
   const senior = task.seniorId ? profiles.find(p => p.id === task.seniorId) : null;
   const isSeniorReviewer = task.seniorId === user.id;
-  const isAssignee = task.assigneeIds.includes(user.id);
+  const isAssignee = task.assigneeIds.includes(user.id) || 
+    task.assigneeIds.some(id => {
+      const p = profiles.find(prof => prof.id === id);
+      return p && (p.email.toLowerCase() === user.email.toLowerCase() || p.name.toLowerCase() === user.name.toLowerCase());
+    });
 
   const checkedCount = task.checklist.filter(c => c.isChecked).length;
   const checklistPct = task.checklist.length > 0 ? Math.round((checkedCount / task.checklist.length) * 100) : 0;
@@ -889,7 +893,14 @@ export default function EmployeeDashboardPage() {
   const fetchLocalData = () => {
     if (!user) return;
     const db = getDb();
-    const tasks = db.tasks.filter(t => t.assigneeIds.includes(user.id) || t.seniorId === user.id);
+    const tasks = db.tasks.filter(t => {
+      const isAssignee = t.assigneeIds.includes(user.id) || 
+        t.assigneeIds.some(id => {
+          const p = db.profiles.find(prof => prof.id === id);
+          return p && (p.email.toLowerCase() === user.email.toLowerCase() || p.name.toLowerCase() === user.name.toLowerCase());
+        });
+      return isAssignee || t.seniorId === user.id;
+    });
     setMyTasks(tasks);
     setMyProjects(db.projects.filter(p => p.departmentId === user.departmentId));
     setAllProfiles(db.profiles);
@@ -922,7 +933,13 @@ export default function EmployeeDashboardPage() {
   }
 
   // Stats
-  const myAssignedTasks = myTasks.filter(t => t.assigneeIds.includes(user.id));
+  const myAssignedTasks = myTasks.filter(t => 
+    t.assigneeIds.includes(user.id) || 
+    t.assigneeIds.some(id => {
+      const p = allProfiles.find(prof => prof.id === id);
+      return p && (p.email.toLowerCase() === user.email.toLowerCase() || p.name.toLowerCase() === user.name.toLowerCase());
+    })
+  );
   const todayStr = new Date().toISOString().split('T')[0];
   const stats = {
     assigned: myAssignedTasks.length,

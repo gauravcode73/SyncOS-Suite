@@ -119,7 +119,11 @@ function TaskDetailDrawer({
   const assignees = profiles.filter(p => task.assigneeIds.includes(p.id));
   const senior = task.seniorId ? profiles.find(p => p.id === task.seniorId) : null;
   const isSeniorReviewer = task.seniorId === user.id;
-  const isAssignee = task.assigneeIds.includes(user.id);
+  const isAssignee = task.assigneeIds.includes(user.id) || 
+    task.assigneeIds.some(id => {
+      const p = profiles.find(prof => prof.id === id);
+      return p && (p.email.toLowerCase() === user.email.toLowerCase() || p.name.toLowerCase() === user.name.toLowerCase());
+    });
   const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status !== 'Completed';
   const checkedCount = task.checklist.filter(c => c.isChecked).length;
   const checklistPct = task.checklist.length > 0 ? Math.round((checkedCount / task.checklist.length) * 100) : 0;
@@ -664,7 +668,14 @@ export default function MyTasksKanbanPage() {
 
   if (!user) return null;
 
-  const myWorkflowTasks = tasks.filter(t => t.assigneeIds.includes(user.id) || t.seniorId === user.id);
+  const myWorkflowTasks = tasks.filter(t => {
+    const isAssignee = t.assigneeIds.includes(user.id) || 
+      t.assigneeIds.some(id => {
+        const p = profiles.find(prof => prof.id === id);
+        return p && (p.email.toLowerCase() === user.email.toLowerCase() || p.name.toLowerCase() === user.name.toLowerCase());
+      });
+    return isAssignee || t.seniorId === user.id;
+  });
 
   return (
     <div className="space-y-6 pb-8">
