@@ -121,6 +121,9 @@ function TaskDetailDrawer({
   const isSeniorReviewer = task.seniorId === user.id;
   const isAssignee = task.assigneeIds.includes(user.id) || 
     task.assigneeIds.some(id => {
+      if (id.toLowerCase() === user.name.toLowerCase() || id.toLowerCase() === user.email.toLowerCase()) {
+        return true;
+      }
       const p = profiles.find(prof => prof.id === id);
       return p && (p.email.toLowerCase() === user.email.toLowerCase() || p.name.toLowerCase() === user.name.toLowerCase());
     });
@@ -671,6 +674,9 @@ export default function MyTasksKanbanPage() {
   const myWorkflowTasks = tasks.filter(t => {
     const isAssignee = t.assigneeIds.includes(user.id) || 
       t.assigneeIds.some(id => {
+        if (id.toLowerCase() === user.name.toLowerCase() || id.toLowerCase() === user.email.toLowerCase()) {
+          return true;
+        }
         const p = profiles.find(prof => prof.id === id);
         return p && (p.email.toLowerCase() === user.email.toLowerCase() || p.name.toLowerCase() === user.name.toLowerCase());
       });

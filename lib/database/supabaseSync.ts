@@ -21,6 +21,19 @@ import {
 // 🔄 CONVERTER LAYERS (camelCase ⇆ snake_case)
 // ====================================================
 
+const parseJsonArray = (val: any): any[] => {
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? parsed : [parsed].filter(Boolean);
+    } catch (e) {
+      if (val.trim()) return [val.trim()];
+    }
+  }
+  return [];
+};
+
 // 1. Profile
 const mapProfileFromDb = (p: any): Profile => ({
   id: p.id,
@@ -143,7 +156,7 @@ const mapTaskFromDb = (t: any): Task => ({
   status: t.status || 'Assigned',
   departmentId: t.department_id || null,
   teamId: t.team_id || null,
-  assigneeIds: Array.isArray(t.assignee_ids) ? t.assignee_ids : [],
+  assigneeIds: parseJsonArray(t.assignee_ids),
   seniorId: t.senior_id || null,
   qaReviewerId: t.qa_reviewer_id || null,
   requiresQA: t.requires_qa || false,
@@ -155,12 +168,12 @@ const mapTaskFromDb = (t: any): Task => ({
   estimatedHours: Number(t.estimated_hours || 0),
   actualHours: Number(t.actual_hours || 0),
   progress: t.progress || 0,
-  tags: Array.isArray(t.tags) ? t.tags : [],
-  subtasks: Array.isArray(t.subtasks) ? t.subtasks : [],
-  checklist: Array.isArray(t.checklist) ? t.checklist : [],
-  comments: Array.isArray(t.comments) ? t.comments : [],
-  attachments: Array.isArray(t.attachments) ? t.attachments : [],
-  timeline: Array.isArray(t.timeline) ? t.timeline : [],
+  tags: parseJsonArray(t.tags),
+  subtasks: parseJsonArray(t.subtasks),
+  checklist: parseJsonArray(t.checklist),
+  comments: parseJsonArray(t.comments),
+  attachments: parseJsonArray(t.attachments),
+  timeline: parseJsonArray(t.timeline),
   isDeleted: t.is_deleted || false,
   deletedAt: t.deleted_at || undefined,
   completedAt: t.completed_at || undefined,
