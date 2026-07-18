@@ -560,7 +560,11 @@ export default function MyTasksKanbanPage() {
     }
   };
 
-  useEffect(() => { fetchTasks(); }, [user, dbVersion]);
+  useEffect(() => {
+    fetchTasks();
+    const interval = setInterval(fetchTasks, 1500);
+    return () => clearInterval(interval);
+  }, [user, dbVersion]);
 
   // Handlers — all original logic preserved
   const handleUpdateStatus = (taskId: string, status: Task['status']) => {

@@ -13,7 +13,7 @@ import {
 import { useDashboard } from '../../dashboard/DashboardContext';
 import {
   getDb, saveDb, addActivityLog, Task, Project, MeetingRoom,
-  DocumentFile, Announcement, Profile
+  DocumentFile, Announcement, Profile, Attendance
 } from '@/lib/database/mockDb';
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
@@ -722,6 +722,24 @@ function EmptyState({ onRefresh }: { onRefresh: () => void }) {
   );
 }
 
+const formatAttendanceTime = (isoString: string | null) => {
+  if (!isoString) return '—';
+  try {
+    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return '—';
+  }
+};
+
+const formatAttendanceDate = (dateString: string) => {
+  try {
+    const d = new Date(dateString);
+    return d.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+  } catch (e) {
+    return dateString;
+  }
+};
+
 // ─── Main Dashboard Page ──────────────────────────────────────────────────────
 export default function EmployeeDashboardPage() {
   const {
@@ -734,6 +752,7 @@ export default function EmployeeDashboardPage() {
   const [myProjects, setMyProjects] = useState<Project[]>([]);
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [attendanceLogs, setAttendanceLogs] = useState<Attendance[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
 
@@ -867,7 +886,7 @@ export default function EmployeeDashboardPage() {
     if (idx !== -1) { db.tasks[idx].progress = val; saveDb(db); refreshDbState(); }
   };
 
-  useEffect(() => {
+  const fetchLocalData = () => {
     if (!user) return;
     const db = getDb();
     const tasks = db.tasks.filter(t => t.assigneeIds.includes(user.id) || t.seniorId === user.id);
@@ -876,10 +895,22 @@ export default function EmployeeDashboardPage() {
     setAllProfiles(db.profiles);
     setAnnouncements(db.announcements.slice(0, 4));
 
+    const logs = db.attendance
+      .filter(a => a.profileId === user.id)
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5);
+    setAttendanceLogs(logs);
+
     if (selectedTask) {
       const refreshed = db.tasks.find(t => t.id === selectedTask.id) || null;
       setSelectedTask(refreshed);
     }
+  };
+
+  useEffect(() => {
+    fetchLocalData();
+    const interval = setInterval(fetchLocalData, 1500);
+    return () => clearInterval(interval);
   }, [user, dbVersion]);
 
   if (!user) {
@@ -1099,6 +1130,50 @@ export default function EmployeeDashboardPage() {
 
           {/* Calendar widget */}
           <CalendarWidget tasks={myAssignedTasks} />
+
+          {/* Time Logs Widget */}
+          <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">My Attendance Logs</h3>
+            </div>
+            {attendanceLogs.length === 0 ? (
+              <p className="text-xs text-slate-600 italic text-center py-4">No clock logs found</p>
+            ) : (
+              <div className="space-y-3">
+                {attendanceLogs.map((log) => {
+                  const checkInStr = formatAttendanceTime(log.checkIn);
+                  const checkOutStr = formatAttendanceTime(log.checkOut);
+                  return (
+                    <div key={log.id} className="p-3 bg-slate-950/40 border border-slate-850 rounded-xl flex items-center justify-between text-xs gap-2">
+                      <div>
+                        <p className="font-bold text-white">{formatAttendanceDate(log.date)}</p>
+                        <div className="flex items-center gap-1.5 mt-1 text-[10px] text-slate-500 font-medium">
+                          <span>In: <strong className="text-slate-300">{checkInStr}</strong></span>
+                          <span>•</span>
+                          <span>Out: <strong className="text-slate-300">{checkOutStr}</strong></span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold ${
+                          log.status === 'Present' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                          log.status === 'Late' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                          log.status === 'On Leave' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                          'bg-red-500/10 text-red-400 border border-red-500/20'
+                        }`}>{log.status}</span>
+                        {log.checkIn && !log.checkOut && (
+                          <p className="text-[10px] text-emerald-400 font-bold mt-1 animate-pulse">● Active Now</p>
+                        )}
+                        {log.workingHours > 0 && (
+                          <p className="text-[10px] text-slate-500 mt-1">{log.workingHours.toFixed(1)} hrs</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Activity Feed */}
           <ActivityFeed tasks={myTasks} user={user} />
