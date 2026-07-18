@@ -24,6 +24,8 @@ export default function AdminChatMonitorPage() {
 
   useEffect(() => {
     fetchDb();
+    const interval = setInterval(fetchDb, 1500);
+    return () => clearInterval(interval);
   }, [dbVersion]);
 
   useEffect(() => {

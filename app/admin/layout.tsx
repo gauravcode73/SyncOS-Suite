@@ -76,6 +76,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           } else {
             // Cloud wins — always merge cloud data into local
             const merged = {
+              ...currentLocal,
               ...pulled,
               notifications: currentLocal.notifications || []
             };

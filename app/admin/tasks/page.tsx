@@ -27,12 +27,18 @@ export default function AdminTasksPage() {
   const [selectedTaskForReview, setSelectedTaskForReview] = useState<Task | null>(null);
   const [adminCorrectionReason, setAdminCorrectionReason] = useState('');
 
-  useEffect(() => {
+  const fetchDbData = () => {
     const db = getDb();
     setTasks(db.tasks);
     setProjects(db.projects);
     setProfiles(db.profiles);
     setDepartments(db.departments);
+  };
+
+  useEffect(() => {
+    fetchDbData();
+    const interval = setInterval(fetchDbData, 1500);
+    return () => clearInterval(interval);
   }, []);
 
   const handleCreateTask = (e: React.FormEvent) => {

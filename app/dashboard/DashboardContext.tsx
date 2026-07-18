@@ -55,6 +55,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             await pushAllToSupabase(currentLocal);
           } else {
             const merged = {
+              ...currentLocal,
               ...pulled,
               notifications: currentLocal.notifications || []
             };
