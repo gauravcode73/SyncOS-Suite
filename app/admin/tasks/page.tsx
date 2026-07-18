@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getDb, saveDb, addAuditLog, Task, Project, Profile, Department } from '@/lib/database/mockDb';
+import { getDb, saveDb, addAuditLog, Task, Project, Profile, Department, createNotification } from '@/lib/database/mockDb';
 import { CheckSquare, Plus, Trash2, Calendar, FileText, CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
 import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
 import { deleteRecordFromSupabase } from '@/lib/database/supabaseSync';
@@ -90,6 +90,26 @@ export default function AdminTasksPage() {
 
     db.tasks.push(newTask);
     addAuditLog('system', 'Create Advanced Task', 'tasks', newTask.id, `Created task: ${newTask.name} assigned to senior ID: ${newSenior}`);
+    if (newAssignee) {
+      createNotification(
+        newAssignee,
+        'New Task Assigned',
+        `You have been assigned a new task: ${newTask.name}`,
+        'normal',
+        newTask.id,
+        'task'
+      );
+    }
+    if (newSenior) {
+      createNotification(
+        newSenior,
+        'New Task Review Request',
+        `You have been assigned as the senior reviewer for task: ${newTask.name}`,
+        'normal',
+        newTask.id,
+        'task'
+      );
+    }
     saveDb(db);
 
     setTasks([...db.tasks]);
@@ -257,7 +277,6 @@ export default function AdminTasksPage() {
               <div>
                 <label className="block text-slate-400 font-semibold mb-1">Assignee</label>
                 <select
-                  required
                   value={newAssignee}
                   onChange={(e) => setNewAssignee(e.target.value)}
                   className="w-full bg-slate-900 border border-border rounded-lg py-2 px-3 text-white outline-none focus:border-violet-500"
@@ -271,7 +290,6 @@ export default function AdminTasksPage() {
               <div>
                 <label className="block text-slate-400 font-semibold mb-1">Department Senior</label>
                 <select
-                  required
                   value={newSenior}
                   onChange={(e) => setNewSenior(e.target.value)}
                   className="w-full bg-slate-900 border border-border rounded-lg py-2 px-3 text-white outline-none focus:border-violet-500"
