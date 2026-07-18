@@ -34,7 +34,17 @@ export default function EmployeeCalendarPage() {
     });
 
     // Add tasks
-    db.tasks.filter(t => t.assigneeIds.includes(user.id)).forEach(t => {
+    db.tasks.filter(t => {
+      const isAssignee = t.assigneeIds.includes(user.id) || 
+        t.assigneeIds.some(id => {
+          if (id.toLowerCase() === user.name.toLowerCase() || id.toLowerCase() === user.email.toLowerCase()) {
+            return true;
+          }
+          const p = db.profiles.find(prof => prof.id === id);
+          return p && (p.email.toLowerCase() === user.email.toLowerCase() || p.name.toLowerCase() === user.name.toLowerCase());
+        });
+      return isAssignee;
+    }).forEach(t => {
       list.push({
         id: t.id,
         title: t.name,

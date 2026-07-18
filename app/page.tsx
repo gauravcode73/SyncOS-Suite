@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Key, Mail, Eye, EyeOff, Loader2, Smartphone, Award, ShieldAlert } from 'lucide-react';
 import { getDb, saveDb, setCurrentUser, addActivityLog, Profile } from '@/lib/database/mockDb';
-import { isSupabaseConfigured } from '@/lib/database/supabaseClient';
-import { pullFromSupabase, pushAllToSupabase, pushRecordToSupabase } from '@/lib/database/supabaseSync';
+import { isSupabaseConfigured, supabase } from '@/lib/database/supabaseClient';
+import { pullFromSupabase, pushAllToSupabase, pushRecordToSupabase, mapProfileFromDb } from '@/lib/database/supabaseSync';
 import { useTheme } from '@/app/ThemeContext';
 
 export default function EmployeeLoginPage() {
@@ -140,23 +140,48 @@ export default function EmployeeLoginPage() {
     return () => window.removeEventListener('storage', handleStorage);
   }, [router]);
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const currentDb = getDb();
-      const normalizedEmail = email.trim().toLowerCase();
-      let user: Profile | undefined = currentDb.profiles.find(p => p.email.toLowerCase() === normalizedEmail);
+    const currentDb = getDb();
+    const normalizedEmail = email.trim().toLowerCase();
+    let user: Profile | undefined = currentDb.profiles.find(p => p.email.toLowerCase() === normalizedEmail);
 
-      if (!user) {
-        const fallbackUser = ensureFallbackEmployee(currentDb, email);
-        if (fallbackUser) {
-          user = fallbackUser;
+    if (!user && isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', normalizedEmail)
+          .maybeSingle();
+
+        if (data && !error) {
+          const cloudProfile = mapProfileFromDb(data);
+          const existingIdx = currentDb.profiles.findIndex(p => p.id === cloudProfile.id);
+          if (existingIdx !== -1) {
+            currentDb.profiles[existingIdx] = cloudProfile;
+          } else {
+            currentDb.profiles.push(cloudProfile);
+          }
+          saveDb(currentDb, true);
+          user = cloudProfile;
         }
+      } catch (err) {
+        console.error('Failed to query Supabase for profile:', err);
       }
+    }
+
+    if (!user) {
+      const fallbackUser = ensureFallbackEmployee(currentDb, email);
+      if (fallbackUser) {
+        user = fallbackUser;
+      }
+    }
+
+    setTimeout(() => {
 
       if (!user) {
         setError('No employee account found with this email.');

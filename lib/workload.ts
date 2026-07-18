@@ -14,10 +14,18 @@ export const calculateWorkload = (profileId: string): WorkloadSnapshot => {
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const todayStr = now.toISOString().split('T')[0];
 
-  const myTasks = db.tasks.filter(t =>
-    !t.isDeleted &&
-    (t.assigneeIds.includes(profileId) || t.seniorId === profileId)
-  );
+  const myTasks = db.tasks.filter(t => {
+    if (t.isDeleted) return false;
+    const isAssignee = t.assigneeIds.includes(profileId) || 
+      t.assigneeIds.some(id => {
+        if (profile && (id.toLowerCase() === profile.name.toLowerCase() || id.toLowerCase() === profile.email.toLowerCase())) {
+          return true;
+        }
+        const p = db.profiles.find(prof => prof.id === id);
+        return p && profile && (p.email.toLowerCase() === profile.email.toLowerCase() || p.name.toLowerCase() === profile.name.toLowerCase());
+      });
+    return isAssignee || t.seniorId === profileId;
+  });
 
   const activeTasks = myTasks.filter(t =>
     ['Working', 'In Progress', 'Accepted', 'Review Requested', 'Senior Review', 'QA Review'].includes(t.status)

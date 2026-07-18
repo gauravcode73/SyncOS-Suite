@@ -35,7 +35,7 @@ const parseJsonArray = (val: any): any[] => {
 };
 
 // 1. Profile
-const mapProfileFromDb = (p: any): Profile => ({
+export const mapProfileFromDb = (p: any): Profile => ({
   id: p.id,
   employeeId: p.employee_id || '',
   name: p.name || '',
@@ -57,7 +57,7 @@ const mapProfileFromDb = (p: any): Profile => ({
   location: p.location || ''
 });
 
-const mapProfileToDb = (p: Profile): any => ({
+export const mapProfileToDb = (p: Profile): any => ({
   id: p.id,
   employee_id: p.employeeId,
   name: p.name,
@@ -147,7 +147,7 @@ const mapProjectToDb = (p: Project): any => ({
 });
 
 // 5. Task
-const mapTaskFromDb = (t: any): Task => ({
+export const mapTaskFromDb = (t: any): Task => ({
   id: t.id,
   projectId: t.project_id || null,
   name: t.name,
@@ -179,7 +179,7 @@ const mapTaskFromDb = (t: any): Task => ({
   completedAt: t.completed_at || undefined,
 });
 
-const mapTaskToDb = (t: Task): any => ({
+export const mapTaskToDb = (t: Task): any => ({
   id: t.id,
   project_id: t.projectId,
   name: t.name,
@@ -208,7 +208,7 @@ const mapTaskToDb = (t: Task): any => ({
   is_deleted: t.isDeleted,
   deleted_at: t.deletedAt,
   completed_at: t.completedAt,
-  // dependency_task_id stored in JSONB as part of metadata
+  dependency_task_id: t.dependencyTaskId,
 });
 
 // 6. ChatRoom

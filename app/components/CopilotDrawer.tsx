@@ -60,7 +60,18 @@ export default function CopilotDrawer() {
 
     // 2. TASKS / TODOs
     if (cleanQuery.includes('task') || cleanQuery.includes('todo') || cleanQuery.includes('assigned') || cleanQuery.includes('deadline')) {
-      const myTasks = db.tasks.filter(t => !t.isDeleted && t.assigneeIds.includes(userProfile.id));
+      const myTasks = db.tasks.filter(t => {
+        if (t.isDeleted) return false;
+        const isAssignee = t.assigneeIds.includes(userProfile.id) || 
+          t.assigneeIds.some(id => {
+            if (id.toLowerCase() === userProfile.name.toLowerCase() || id.toLowerCase() === userProfile.email.toLowerCase()) {
+              return true;
+            }
+            const p = db.profiles.find(prof => prof.id === id);
+            return p && (p.email.toLowerCase() === userProfile.email.toLowerCase() || p.name.toLowerCase() === userProfile.name.toLowerCase());
+          });
+        return isAssignee;
+      });
       
       if (myTasks.length === 0) {
         if (['Super Admin', 'HR Admin'].includes(userProfile.role)) {
