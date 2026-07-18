@@ -432,6 +432,26 @@ export interface Report {
   isScheduled: boolean;
 }
 
+export interface CompanySettings {
+  name: string;
+  website: string;
+  timezone: string;
+  workStartTime: string;
+  workEndTime: string;
+  graceMinutes: number;
+  annualLeaves: number;
+}
+
+export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
+  name: 'SyncOS Corp',
+  website: 'https://syncos.io',
+  timezone: 'Asia/Kolkata',
+  workStartTime: '09:00',
+  workEndTime: '18:00',
+  graceMinutes: 15,
+  annualLeaves: 18,
+};
+
 export interface DB {
   profiles: Profile[];
   departments: Department[];
@@ -453,6 +473,7 @@ export interface DB {
   automationRules: AutomationRule[];
   workloadSnapshots: WorkloadSnapshot[];
   reports: Report[];
+  companySettings?: CompanySettings;
 }
 
 // ─────────────────────────────────────────────
@@ -623,7 +644,8 @@ const initialDB: DB = {
   auditLogs: [],
   automationRules: seedAutomationRules,
   workloadSnapshots: [],
-  reports: []
+  reports: [],
+  companySettings: DEFAULT_COMPANY_SETTINGS,
 };
 
 // ─────────────────────────────────────────────
@@ -676,6 +698,7 @@ export const getDb = (): DB => {
       workloadSnapshots: parsed.workloadSnapshots || [],
       reports: parsed.reports || [],
       notificationPreferences: parsed.notificationPreferences || [],
+      companySettings: parsed.companySettings || DEFAULT_COMPANY_SETTINGS,
     };
   } catch (e) {
     return initialDB;

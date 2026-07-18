@@ -17,11 +17,12 @@ import {
   Sun,
   Moon,
   Bell,
-  User
+  User,
+  Trash2
 } from 'lucide-react';
 import { canAccessAdminPortal } from '@/lib/rbac';
 import { DashboardProvider, useDashboard } from '../dashboard/DashboardContext';
-import { getCurrentUser, setCurrentUser, addActivityLog, Profile, getDb, Notification } from '@/lib/database/mockDb';
+import { getCurrentUser, setCurrentUser, addActivityLog, Profile, getDb, saveDb, Notification } from '@/lib/database/mockDb';
 import { useTheme } from '@/app/ThemeContext';
 import CopilotDrawer from '@/app/components/CopilotDrawer';
 
@@ -35,6 +36,7 @@ function EmployeeDashboardLayoutContent({ children }: { children: React.ReactNod
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [companyName, setCompanyName] = useState('SyncOS Suite');
 
   const refreshNotifications = () => {
     const currentUser = getCurrentUser();
@@ -43,6 +45,7 @@ function EmployeeDashboardLayoutContent({ children }: { children: React.ReactNod
     const filtered = db.notifications.filter((n: Notification) => n.profileId === currentUser.id).slice(0, 6);
     setNotifications(filtered);
     setUnreadNotifs(filtered.filter(n => !n.isRead).length);
+    setCompanyName(db.companySettings?.name || 'SyncOS Suite');
   };
 
   useEffect(() => {
@@ -84,6 +87,28 @@ function EmployeeDashboardLayoutContent({ children }: { children: React.ReactNod
     router.push('/');
   };
 
+  const handleClearNotifications = () => {
+    const currentUser = getCurrentUser();
+    if (!currentUser) return;
+    const db = getDb();
+    db.notifications = db.notifications.filter(n => n.profileId !== currentUser.id);
+    saveDb(db);
+    setNotifications([]);
+    setUnreadNotifs(0);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'enterprise_os_db_v6' }));
+  };
+
+  const handleMarkAllRead = () => {
+    const currentUser = getCurrentUser();
+    if (!currentUser) return;
+    const db = getDb();
+    db.notifications = db.notifications.map(n =>
+      n.profileId === currentUser.id ? { ...n, isRead: true } : n
+    );
+    saveDb(db);
+    refreshNotifications();
+  };
+
   const navItems = [
     { name: 'Workspace Overview', icon: LayoutDashboard, path: '/dashboard' },
     { name: 'My Tasks Board', icon: CheckSquare, path: '/my-tasks' },
@@ -112,7 +137,7 @@ function EmployeeDashboardLayoutContent({ children }: { children: React.ReactNod
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
           <div className="relative flex flex-col w-72 max-w-xs bg-sidebar border-r border-border p-6 z-50">
             <div className="flex items-center justify-between mb-8">
-              <span className="text-lg font-bold text-white tracking-wider">SyncOS</span>
+              <span className="text-lg font-bold text-white tracking-wider">{companyName}</span>
               <button onClick={() => setSidebarOpen(false)} className="p-1 rounded-lg hover:bg-slate-850 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
@@ -153,7 +178,7 @@ function EmployeeDashboardLayoutContent({ children }: { children: React.ReactNod
       {/* DESKTOP SIDEBAR */}
       <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card p-6 shrink-0 transition-all duration-300">
         <div className="flex items-center gap-2 mb-8">
-          <span className="text-lg font-extrabold text-foreground tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-indigo-500">SyncOS Suite</span>
+          <span className="text-lg font-extrabold text-foreground tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-indigo-500">{companyName}</span>
         </div>
 
         <nav className="flex-1 space-y-1">
@@ -241,12 +266,31 @@ function EmployeeDashboardLayoutContent({ children }: { children: React.ReactNod
               </button>
               {notificationsOpen && (
                 <div className="absolute right-0 top-12 w-72 rounded-xl border border-border bg-card shadow-2xl p-2 z-50">
-                  <div className="px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Notifications</div>
+                  <div className="flex items-center justify-between px-2 py-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Notifications</span>
+                    {notifications.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={handleMarkAllRead}
+                          className="text-[9px] font-bold text-violet-400 hover:text-violet-300 transition-colors px-1.5 py-0.5 rounded hover:bg-violet-500/10"
+                        >
+                          Mark read
+                        </button>
+                        <button
+                          onClick={handleClearNotifications}
+                          className="text-[9px] font-bold text-red-400 hover:text-red-300 transition-colors px-1.5 py-0.5 rounded hover:bg-red-500/10 flex items-center gap-0.5"
+                        >
+                          <Trash2 className="w-2.5 h-2.5" /> Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   {notifications.length === 0 ? (
                     <div className="px-2 py-3 text-xs text-slate-500">No new updates</div>
                   ) : notifications.map(item => (
-                    <div key={item.id} className="rounded-lg border border-border/60 bg-background/70 px-2.5 py-2.5 mb-1.5">
-                      <div className="text-[11px] font-semibold text-foreground">{item.title}</div>
+                    <div key={item.id} className={`rounded-lg border px-2.5 py-2.5 mb-1.5 ${item.isRead ? 'border-border/40 bg-background/40' : 'border-border/60 bg-background/70'}`}>
+                      {!item.isRead && <div className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block mr-1.5 mb-0.5" />}
+                      <div className="text-[11px] font-semibold text-foreground inline">{item.title}</div>
                       <div className="text-[10px] text-slate-500 mt-0.5">{item.body}</div>
                     </div>
                   ))}

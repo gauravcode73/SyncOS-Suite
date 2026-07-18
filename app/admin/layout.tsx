@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Building, FolderKanban, CheckSquare, MessageSquare,
   Video, LogOut, Menu, X, Sun, Moon, Shield, Bell, Settings, ListTodo,
-  UsersRound, BarChart3, ClipboardList, Zap, FileSearch, ChevronRight, Dot
+  UsersRound, BarChart3, ClipboardList, Zap, FileSearch, ChevronRight, Dot, Trash2
 } from 'lucide-react';
 import { getDb, setCurrentUser, getCurrentUser, Profile, saveDb } from '@/lib/database/mockDb';
 import { canAccessAdminPortal, getRoleBadgeColor } from '@/lib/rbac';
@@ -38,6 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [companyName, setCompanyName] = useState('SyncOS');
 
   const refreshNotifications = (currentUser: Profile | null) => {
     if (!currentUser) return;
@@ -45,6 +46,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const filtered = db.notifications.filter(n => n.profileId === currentUser.id).slice(0, 6);
     setNotifications(filtered);
     setUnreadNotifs(filtered.filter(n => !n.isRead).length);
+    // also refresh company name
+    setCompanyName(db.companySettings?.name || 'SyncOS');
   };
 
   useEffect(() => {
@@ -108,6 +111,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setCurrentUser(null);
     setUser(null);
     router.push('/admin/login');
+  };
+
+  const handleClearNotifications = () => {
+    if (!user) return;
+    const db = getDb();
+    db.notifications = db.notifications.filter(n => n.profileId !== user.id);
+    saveDb(db);
+    setNotifications([]);
+    setUnreadNotifs(0);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'enterprise_os_db_v6' }));
+  };
+
+  const handleMarkAllRead = () => {
+    if (!user) return;
+    const db = getDb();
+    db.notifications = db.notifications.map(n =>
+      n.profileId === user.id ? { ...n, isRead: true } : n
+    );
+    saveDb(db);
+    refreshNotifications(user);
   };
 
   const navGroups: NavGroup[] = [
@@ -177,7 +200,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Shield className="w-4 h-4 text-white" />
         </div>
         <div>
-          <p className="text-sm font-extrabold text-foreground tracking-tight">SyncOS</p>
+          <p className="text-sm font-extrabold text-foreground tracking-tight">{companyName}</p>
           <p className="text-[10px] text-slate-500 font-medium">Admin Console</p>
         </div>
       </div>
@@ -300,12 +323,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </button>
               {notificationsOpen && (
                 <div className="absolute right-0 top-11 w-72 rounded-xl border border-border bg-card shadow-2xl p-2 z-50">
-                  <div className="px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Notifications</div>
+                  <div className="flex items-center justify-between px-2 py-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Notifications</span>
+                    {notifications.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={handleMarkAllRead}
+                          className="text-[9px] font-bold text-violet-400 hover:text-violet-300 transition-colors px-1.5 py-0.5 rounded hover:bg-violet-500/10"
+                        >
+                          Mark read
+                        </button>
+                        <button
+                          onClick={handleClearNotifications}
+                          className="text-[9px] font-bold text-red-400 hover:text-red-300 transition-colors px-1.5 py-0.5 rounded hover:bg-red-500/10 flex items-center gap-0.5"
+                        >
+                          <Trash2 className="w-2.5 h-2.5" /> Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   {notifications.length === 0 ? (
                     <div className="px-2 py-3 text-xs text-slate-500">No new updates</div>
                   ) : notifications.map(item => (
-                    <div key={item.id} className="rounded-lg border border-border/60 bg-background/70 px-2.5 py-2.5 mb-1.5">
-                      <div className="text-[11px] font-semibold text-foreground">{item.title}</div>
+                    <div key={item.id} className={`rounded-lg border px-2.5 py-2.5 mb-1.5 ${item.isRead ? 'border-border/40 bg-background/40' : 'border-border/60 bg-background/70'}`}>
+                      {!item.isRead && <div className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block mr-1.5 mb-0.5" />}
+                      <div className="text-[11px] font-semibold text-foreground inline">{item.title}</div>
                       <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{item.body}</div>
                     </div>
                   ))}
